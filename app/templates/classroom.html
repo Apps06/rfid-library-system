@@ -86,6 +86,7 @@ setInterval(async () => {
                             rfid_uid: latest.rfid_uid,
                             logId: latest.id
                         }));
+                        sessionStorage.setItem('currentZone', ZONE);
                         showToast('New Card Detected', 'Please register your details', 'info');
                         setTimeout(() => window.location.href = '/register', 1000);
                         return;

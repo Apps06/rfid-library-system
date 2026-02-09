@@ -158,9 +158,32 @@ async function registerStudent(event) {
     
     if (result && result.success) {
         showToast('Registered!', `${data.name} has been registered`, 'success');
-        form.reset();
-        document.getElementById('rfid-input').focus();
-        loadRecentStudents();
+        
+        // Check if we need to return to a zone
+        const returnZone = sessionStorage.getItem('currentZone');
+        if (returnZone) {
+            // Update currentStudent in session storage so the dashboard reveals immediately
+            sessionStorage.setItem('currentStudent', JSON.stringify({
+                id: result.student?.id || 0,
+                name: data.name,
+                roll_number: data.roll_number,
+                rfid_uid: data.rfid_uid
+            }));
+            
+            const zoneUrls = {
+                'Library': '/library',
+                'Lab': '/labs',
+                'Classroom': '/classroom'
+            };
+            const targetUrl = zoneUrls[returnZone] || '/';
+            
+            showToast('Redirecting', `Taking you to the ${returnZone} dashboard...`, 'info');
+            setTimeout(() => window.location.href = targetUrl, 1500);
+        } else {
+            form.reset();
+            document.getElementById('rfid-input').focus();
+            loadRecentStudents();
+        }
     } else {
         showToast('Error', result?.error || 'Failed to register student', 'error');
     }
