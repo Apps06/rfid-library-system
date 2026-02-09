@@ -74,19 +74,24 @@ setInterval(async () => {
             if (now - logTime < 5000 && (!lastProcessedTime || logTime > lastProcessedTime)) {
                 lastProcessedTime = logTime;
                 
-                await API.put(`/attendance/${latest.id}/zone`, { zone: ZONE });
-                
-                sessionStorage.setItem('currentStudent', JSON.stringify({
-                    id: latest.student_id,
-                    name: latest.student_name,
-                    roll_number: latest.roll_number,
-                    rfid_uid: latest.rfid_uid,
-                    logId: latest.id
-                }));
-                sessionStorage.setItem('currentZone', ZONE);
-                
-                updateSidebarVisibility();
-                showDashboard(latest);
+                if (latest.action === 'ENTRY') {
+                    await API.put(`/attendance/${latest.id}/zone`, { zone: ZONE });
+                    
+                    sessionStorage.setItem('currentStudent', JSON.stringify({
+                        id: latest.student_id,
+                        name: latest.student_name,
+                        roll_number: latest.roll_number,
+                        rfid_uid: latest.rfid_uid,
+                        logId: latest.id
+                    }));
+                    sessionStorage.setItem('currentZone', ZONE);
+                    
+                    updateSidebarVisibility();
+                    showDashboard(latest);
+                } else {
+                    showToast('Goodbye!', 'Checking out...', 'info');
+                    setTimeout(() => window.location.href = '/', 1000);
+                }
             }
         }
     } catch (e) {

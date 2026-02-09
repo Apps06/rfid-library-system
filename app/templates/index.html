@@ -74,5 +74,33 @@
 // Clear any previous session when arriving at home
 sessionStorage.clear();
 updateSidebarVisibility();
+
+let lastProcessedTime = null;
+
+// Poll for RFID scans (EXIT detection)
+setInterval(async () => {
+    try {
+        const response = await API.get('/attendance?per_page=1');
+        if (response && response.success && response.logs.length > 0) {
+            const latest = response.logs[0];
+            const logTime = new Date(latest.timestamp).getTime();
+            const now = new Date().getTime();
+            
+            // If scan happened in last 5 seconds and is newer than our last check
+            if (now - logTime < 5000 && (!lastProcessedTime || logTime > lastProcessedTime)) {
+                lastProcessedTime = logTime;
+                
+                if (latest.action === 'EXIT') {
+                    showToast('Goodbye!', `${latest.student_name || 'Student'} signed out`, 'info');
+                    // Reset session and ensure sidebar stays hidden
+                    sessionStorage.clear();
+                    updateSidebarVisibility();
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Polling error", e);
+    }
+}, 1000);
 </script>
 {% endblock %}

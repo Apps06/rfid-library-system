@@ -76,22 +76,28 @@ setInterval(async () => {
             if (now - logTime < 5000 && (!lastProcessedTime || logTime > lastProcessedTime)) {
                 lastProcessedTime = logTime;
                 
-                // Update zone for this log
-                await API.put(`/attendance/${latest.id}/zone`, { zone: ZONE });
-                
-                // Store student info
-                sessionStorage.setItem('currentStudent', JSON.stringify({
-                    id: latest.student_id,
-                    name: latest.student_name,
-                    roll_number: latest.roll_number,
-                    rfid_uid: latest.rfid_uid,
-                    logId: latest.id
-                }));
-                sessionStorage.setItem('currentZone', ZONE);
-                
-                // Show sidebar and dashboard
-                updateSidebarVisibility();
-                showDashboard(latest);
+                // Update zone for this log if it was an entry
+                if (latest.action === 'ENTRY') {
+                    await API.put(`/attendance/${latest.id}/zone`, { zone: ZONE });
+                    
+                    // Store student info
+                    sessionStorage.setItem('currentStudent', JSON.stringify({
+                        id: latest.student_id,
+                        name: latest.student_name,
+                        roll_number: latest.roll_number,
+                        rfid_uid: latest.rfid_uid,
+                        logId: latest.id
+                    }));
+                    sessionStorage.setItem('currentZone', ZONE);
+                    
+                    // Show sidebar and dashboard
+                    updateSidebarVisibility();
+                    showDashboard(latest);
+                } else {
+                    // It's an EXIT, redirect to home
+                    showToast('Goodbye!', 'Checking out...', 'info');
+                    setTimeout(() => window.location.href = '/', 1000);
+                }
             }
         }
     } catch (e) {
