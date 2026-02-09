@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Student Library Logger - RFID + Raspberry Pi
 
 An automated student library attendance tracking system using RFID technology and Raspberry Pi.
@@ -168,3 +169,7 @@ Cyber Physical Systems Project - Final Exam
 ## 📄 License
 
 MIT License - Free for educational use
+=======
+# rfid-library-system
+Automated RFID-based library management system
+>>>>>>> 84f28eaf59e40c79681bac423b9a0a8f6e7cf2e2
