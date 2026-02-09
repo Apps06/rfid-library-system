@@ -171,4 +171,3 @@ MIT License - Free for educational use
 =======
 # rfid-library-system
 Automated RFID-based library management system
->>>>>>> 84f28eaf59e40c79681bac423b9a0a8f6e7cf2e2
