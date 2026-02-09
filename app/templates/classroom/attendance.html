@@ -1,0 +1,109 @@
+{% extends 'classroom/base.html' %}
+
+{% block title %}Attendance - Classroom{% endblock %}
+{% block page_title %}Attendance Logs{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📋 Attendance Logs</h2>
+        <div class="header-actions-inline">
+            <input type="date" id="date-filter" class="form-input" style="width: 180px;">
+            <button class="btn btn-secondary btn-sm" onclick="loadAttendance()">Filter</button>
+            <a href="/api/attendance/export?zone=Classroom" class="btn btn-sm btn-secondary" download>📥 Export CSV</a>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Student</th>
+                    <th>Roll Number</th>
+                    <th>Action</th>
+                    <th>Device</th>
+                </tr>
+            </thead>
+            <tbody id="attendance-tbody">
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentPage = 1;
+
+    async function loadAttendance(page = 1) {
+        currentPage = page;
+        const dateFilter = document.getElementById('date-filter').value;
+        let url = `/attendance?page=${page}&per_page=20`;
+
+        if (dateFilter) {
+            url += `&date=${dateFilter}`;
+        }
+
+        const data = await API.get(url);
+        if (!data || !data.success) return;
+
+        const tbody = document.getElementById('attendance-tbody');
+
+        if (data.logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No attendance logs found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.logs.map(log => `
+        <tr>
+            <td>${formatDateTime(log.timestamp)}</td>
+            <td><strong>${log.student_name || 'Unknown'}</strong></td>
+            <td>${log.roll_number || log.rfid_uid}</td>
+            <td>
+                <span class="badge ${log.action === 'ENTRY' ? 'badge-success' : 'badge-warning'}">
+                    ${log.action}
+                </span>
+            </td>
+            <td>${log.device_id}</td>
+        </tr>
+    `).join('');
+
+        // Render pagination
+        renderPagination(data.current_page, data.pages);
+    }
+
+    function renderPagination(current, total) {
+        const container = document.getElementById('pagination');
+        if (total <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '<div style="display: flex; gap: 8px; justify-content: center; margin-top: 20px;">';
+
+        if (current > 1) {
+            html += `<button class="btn btn-sm btn-secondary" onclick="loadAttendance(${current - 1})">← Prev</button>`;
+        }
+
+        html += `<span style="padding: 8px 16px; color: var(--text-secondary);">Page ${current} of ${total}</span>`;
+
+        if (current < total) {
+            html += `<button class="btn btn-sm btn-secondary" onclick="loadAttendance(${current + 1})">Next →</button>`;
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // Set default date to today
+    document.getElementById('date-filter').value = new Date().toISOString().split('T')[0];
+
+    loadAttendance();
+</script>
+{% endblock %}

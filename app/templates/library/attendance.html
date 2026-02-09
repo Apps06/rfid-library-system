@@ -1,0 +1,143 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Attendance - Library{% endblock %}
+{% block page_title %}Library Attendance{% endblock %}
+
+{% block content %}
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📡 RFID Scanner</h2>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Scan RFID or Enter Roll Number</label>
+            <input type="text" id="rfid-input" class="form-input" placeholder="Scan card or enter roll number"
+                autofocus>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%;" onclick="markAttendance()">
+            Mark Attendance
+        </button>
+
+        <div id="scan-result" style="margin-top: 20px; display: none;">
+            <div class="activity-item">
+                <div class="activity-badge entry" id="result-badge">→</div>
+                <div class="activity-info">
+                    <div class="activity-name" id="result-name">-</div>
+                    <div class="activity-roll" id="result-roll">-</div>
+                </div>
+                <div class="activity-time">
+                    <div class="activity-action entry" id="result-action">ENTRY</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📋 Today's Library Attendance</h2>
+            <a href="/api/attendance/export?zone=Library" class="btn btn-sm btn-secondary" download>📥 Export CSV</a>
+        </div>
+
+        <div class="activity-list" id="today-activity">
+            <div class="empty-state">
+                <div class="empty-state-icon">📡</div>
+                <div class="empty-state-title">No scans today</div>
+                <p>Library attendance will appear here</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const ZONE = 'Library';
+
+    async function markAttendance() {
+        const rfidInput = document.getElementById('rfid-input');
+        const rfidUid = rfidInput.value.trim();
+
+        if (!rfidUid) {
+            showToast('Error', 'Please scan RFID or enter roll number', 'error');
+            return;
+        }
+
+        const result = await API.post('/scan', { rfid_uid: rfidUid, device_id: 'LIBRARY_01', zone: ZONE });
+
+        if (result && result.success) {
+            // Check if new student needs registration
+            if (result.student.name.startsWith('New Student')) {
+                sessionStorage.setItem('pendingRfid', JSON.stringify({
+                    rfid_uid: result.student.rfid_uid,
+                    logId: result.log_id
+                }));
+                sessionStorage.setItem('currentZone', ZONE);
+                showToast('New Card Detected', 'Please register your details', 'info');
+                setTimeout(() => window.location.href = '/library/register', 1000);
+                return;
+            }
+
+            // Show result
+            document.getElementById('scan-result').style.display = 'block';
+            document.getElementById('result-name').textContent = result.student.name;
+            document.getElementById('result-roll').textContent = result.student.roll_number;
+            document.getElementById('result-action').textContent = result.action;
+            document.getElementById('result-action').className = `activity-action ${result.action.toLowerCase()}`;
+            document.getElementById('result-badge').textContent = result.action === 'ENTRY' ? '→' : '←';
+            document.getElementById('result-badge').className = `activity-badge ${result.action.toLowerCase()}`;
+
+            showToast(result.action, `${result.student.name} - ${result.action}`, result.action === 'ENTRY' ? 'entry' : 'exit');
+
+            rfidInput.value = '';
+            loadTodayAttendance();
+        } else {
+            showToast('Error', result?.error || 'Failed to mark attendance', 'error');
+        }
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('rfid-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            markAttendance();
+        }
+    });
+
+    async function loadTodayAttendance() {
+        const data = await API.get('/attendance/today?zone=' + ZONE);
+        if (!data || !data.success) return;
+
+        const container = document.getElementById('today-activity');
+
+        if (data.logs.length === 0) {
+            container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📡</div>
+                <div class="empty-state-title">No scans today</div>
+                <p>Library attendance will appear here</p>
+            </div>
+        `;
+            return;
+        }
+
+        container.innerHTML = data.logs.slice(0, 10).map(log => `
+        <div class="activity-item">
+            <div class="activity-badge ${log.action.toLowerCase()}">
+                ${log.action === 'ENTRY' ? '→' : '←'}
+            </div>
+            <div class="activity-info">
+                <div class="activity-name">${log.student_name || 'Unknown'}</div>
+                <div class="activity-roll">${log.roll_number || log.rfid_uid}</div>
+            </div>
+            <div class="activity-time">
+                <div class="activity-action ${log.action.toLowerCase()}">${log.action}</div>
+                <div>${formatTime(log.timestamp)}</div>
+            </div>
+        </div>
+    `).join('');
+    }
+
+    loadTodayAttendance();
+</script>
+{% endblock %}

@@ -1,0 +1,107 @@
+[
+    {
+        "id": 1,
+        "name": "Digital Multimeter",
+        "category": "Electronics",
+        "quantity": 15,
+        "damage_fine": 500
+    },
+    {
+        "id": 2,
+        "name": "Oscilloscope",
+        "category": "Electronics",
+        "quantity": 8,
+        "damage_fine": 5000
+    },
+    {
+        "id": 3,
+        "name": "Function Generator",
+        "category": "Electronics",
+        "quantity": 6,
+        "damage_fine": 3000
+    },
+    {
+        "id": 4,
+        "name": "Soldering Iron",
+        "category": "Electronics",
+        "quantity": 20,
+        "damage_fine": 200
+    },
+    {
+        "id": 5,
+        "name": "Breadboard",
+        "category": "Electronics",
+        "quantity": 30,
+        "damage_fine": 100
+    },
+    {
+        "id": 6,
+        "name": "Arduino Uno",
+        "category": "Embedded",
+        "quantity": 20,
+        "damage_fine": 800
+    },
+    {
+        "id": 7,
+        "name": "Raspberry Pi 4",
+        "category": "Embedded",
+        "quantity": 10,
+        "damage_fine": 3500
+    },
+    {
+        "id": 8,
+        "name": "ESP32 Module",
+        "category": "Embedded",
+        "quantity": 25,
+        "damage_fine": 400
+    },
+    {
+        "id": 9,
+        "name": "Beaker (500ml)",
+        "category": "Chemistry",
+        "quantity": 40,
+        "damage_fine": 150
+    },
+    {
+        "id": 10,
+        "name": "Bunsen Burner",
+        "category": "Chemistry",
+        "quantity": 15,
+        "damage_fine": 600
+    },
+    {
+        "id": 11,
+        "name": "Microscope",
+        "category": "Biology",
+        "quantity": 12,
+        "damage_fine": 8000
+    },
+    {
+        "id": 12,
+        "name": "Vernier Caliper",
+        "category": "Physics",
+        "quantity": 25,
+        "damage_fine": 350
+    },
+    {
+        "id": 13,
+        "name": "Screw Gauge",
+        "category": "Physics",
+        "quantity": 20,
+        "damage_fine": 300
+    },
+    {
+        "id": 14,
+        "name": "Spectrometer",
+        "category": "Physics",
+        "quantity": 6,
+        "damage_fine": 4500
+    },
+    {
+        "id": 15,
+        "name": "Logic Analyzer",
+        "category": "Electronics",
+        "quantity": 5,
+        "damage_fine": 2500
+    }
+]

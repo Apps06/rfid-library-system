@@ -1,0 +1,170 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Pay Fine - Library{% endblock %}
+{% block page_title %}Pay Fine{% endblock %}
+
+{% block content %}
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">💰 Outstanding Fines</h2>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label">Your Student ID (RFID or Roll Number)</label>
+            <div style="display: flex; gap: 12px;">
+                <input type="text" id="student-id" class="form-input" placeholder="Enter your roll number or scan RFID">
+                <button class="btn btn-primary" onclick="loadFines()">Load Fines</button>
+            </div>
+        </div>
+
+        <div id="fines-list">
+            <div class="empty-state">
+                <div class="empty-state-icon">💰</div>
+                <div class="empty-state-title">Enter Student ID</div>
+                <p>Enter your student ID to view outstanding fines</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📱 Payment Portal</h2>
+        </div>
+
+        <div id="payment-section" style="display: none;">
+            <div class="qr-container">
+                <div class="payment-info">
+                    <h4 id="pay-book-title">-</h4>
+                    <div class="payment-amount" id="pay-amount">₹0</div>
+                    <div class="qr-code" id="qr-display">
+                        QR Code<br>
+                        <small>(Simulated)</small>
+                    </div>
+                    <div class="payment-account">
+                        Pay to: <strong id="pay-account">rvcelibrary@upi</strong>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-success" style="width: 100%; margin-top: 16px;" onclick="confirmPayment()">
+                ✓ Payment Done
+            </button>
+        </div>
+
+        <div id="no-payment-section">
+            <div class="empty-state">
+                <div class="empty-state-icon">📱</div>
+                <div class="empty-state-title">Select a Fine to Pay</div>
+                <p>Click "Pay" on a fine to generate payment QR</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedFine = null;
+
+    async function loadFines() {
+        const studentId = document.getElementById('student-id').value.trim();
+
+        if (!studentId) {
+            showToast('Error', 'Please enter your student ID', 'error');
+            return;
+        }
+
+        const data = await API.get(`/library/fines?student_identifier=${encodeURIComponent(studentId)}&sim_date=${getSimulationDate()}`);
+
+        if (!data || !data.success) {
+            showToast('Error', data?.error || 'Failed to load fines', 'error');
+            return;
+        }
+
+        renderFines(data.fines);
+    }
+
+    function renderFines(fines) {
+        const container = document.getElementById('fines-list');
+
+        if (fines.length === 0) {
+            container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">✅</div>
+                <div class="empty-state-title">No Outstanding Fines</div>
+                <p>You have no pending fines to pay</p>
+            </div>
+        `;
+            return;
+        }
+
+        container.innerHTML = `
+        <div class="activity-list">
+            ${fines.map(f => `
+                <div class="activity-item">
+                    <div class="activity-badge" style="background: var(--danger-bg); color: var(--danger);">₹</div>
+                    <div class="activity-info">
+                        <div class="activity-name">${f.book_title}</div>
+                        <div class="activity-roll">Due: ${formatDate(f.due_date)} | ${f.days_overdue} days overdue</div>
+                    </div>
+                    <div class="activity-time">
+                        <div class="text-danger" style="font-size: 18px; font-weight: 700;">₹${f.fine_amount}</div>
+                        <button class="btn btn-sm btn-primary" onclick="selectFine(${f.id}, '${f.book_title}', ${f.fine_amount})">Pay</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        <div style="margin-top: 16px; padding: 16px; background: var(--bg-secondary); border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="text-muted">Total Outstanding:</span>
+                <span style="font-size: 24px; font-weight: 700; color: var(--danger);">₹${fines.reduce((sum, f) => sum + f.fine_amount, 0)}</span>
+            </div>
+        </div>
+    `;
+    }
+
+    function selectFine(id, title, amount) {
+        selectedFine = { id, title, amount };
+
+        document.getElementById('payment-section').style.display = 'block';
+        document.getElementById('no-payment-section').style.display = 'none';
+
+        document.getElementById('pay-book-title').textContent = title;
+        document.getElementById('pay-amount').textContent = '₹' + amount;
+        document.getElementById('qr-display').innerHTML = `
+        <div style="font-size: 11px; text-align: left; padding: 8px;">
+            <strong>UPI Payment</strong><br>
+            Amount: ₹${amount}<br>
+            To: rvcelibrary@upi<br>
+            Note: ${title}
+        </div>
+    `;
+    }
+
+    async function confirmPayment() {
+        if (!selectedFine) {
+            showToast('Error', 'No fine selected', 'error');
+            return;
+        }
+
+        const result = await API.post('/library/pay-fine', { borrow_id: selectedFine.id });
+
+        if (result && result.success) {
+            showToast('Payment Successful', `₹${selectedFine.amount} paid for ${selectedFine.title}`, 'success');
+            selectedFine = null;
+            document.getElementById('payment-section').style.display = 'none';
+            document.getElementById('no-payment-section').style.display = 'block';
+            loadFines();
+        } else {
+            showToast('Error', result?.error || 'Payment failed', 'error');
+        }
+    }
+
+    function onSimulationDateChange(date) {
+        if (document.getElementById('student-id').value.trim()) {
+            loadFines();
+        }
+    }
+</script>
+{% endblock %}

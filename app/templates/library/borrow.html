@@ -1,0 +1,122 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Borrow Books - Library{% endblock %}
+{% block page_title %}Borrow Books{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📖 Available Books</h2>
+        <div class="header-actions-inline">
+            <input type="text" id="search-input" class="form-input" placeholder="Search by title or author..."
+                style="width: 300px;">
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label">Your Student ID (RFID or Roll Number)</label>
+        <input type="text" id="student-id" class="form-input" placeholder="Enter your roll number or scan RFID"
+            style="max-width: 400px;">
+    </div>
+
+    <div class="table-container">
+        <table id="books-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>ISBN</th>
+                    <th>Status</th>
+                    <th>Available</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="books-tbody">
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allBooks = [];
+
+    async function loadBooks() {
+        const data = await API.get('/library/books');
+        if (!data || !data.success) return;
+
+        allBooks = data.books;
+        renderBooks(allBooks);
+    }
+
+    function renderBooks(books) {
+        const tbody = document.getElementById('books-tbody');
+
+        if (books.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No books found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = books.map(book => `
+        <tr>
+            <td>
+                <strong>${book.title}</strong>
+                ${book.is_important ? '<span class="important-badge">IMPORTANT</span>' : ''}
+            </td>
+            <td>${book.author}</td>
+            <td><code>${book.isbn}</code></td>
+            <td>
+                ${book.quantity_available > 0
+                ? '<span class="badge badge-success">Available</span>'
+                : '<span class="badge badge-warning">Not Available</span>'}
+            </td>
+            <td>${book.quantity_available} / ${book.quantity}</td>
+            <td>
+                <button class="btn btn-sm btn-primary" 
+                    onclick="borrowBook(${book.id})" 
+                    ${book.quantity_available === 0 ? 'disabled' : ''}>
+                    Borrow
+                </button>
+            </td>
+        </tr>
+    `).join('');
+    }
+
+    // Search functionality
+    document.getElementById('search-input').addEventListener('input', debounce(function (e) {
+        const query = e.target.value.toLowerCase();
+        const filtered = allBooks.filter(book =>
+            book.title.toLowerCase().includes(query) ||
+            book.author.toLowerCase().includes(query)
+        );
+        renderBooks(filtered);
+    }, 300));
+
+    async function borrowBook(bookId) {
+        const studentId = document.getElementById('student-id').value.trim();
+
+        if (!studentId) {
+            showToast('Error', 'Please enter your student ID first', 'error');
+            return;
+        }
+
+        const result = await API.post('/library/borrow', {
+            book_id: bookId,
+            student_identifier: studentId
+        });
+
+        if (result && result.success) {
+            showToast('Success', `Book borrowed successfully! Due date: ${formatDate(result.borrow.due_date)}`, 'success');
+            loadBooks();
+        } else {
+            showToast('Error', result?.error || 'Failed to borrow book', 'error');
+        }
+    }
+
+    loadBooks();
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Register - Library{% endblock %}
+{% block page_title %}Register New Student{% endblock %}
+
+{% block content %}
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">✏️ Student Registration</h2>
+        </div>
+
+        <form id="register-form" onsubmit="registerStudent(event)">
+            <div class="form-group">
+                <label class="form-label">RFID UID</label>
+                <input type="text" id="rfid-input" class="form-input" placeholder="Scan RFID card or enter UID"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="name-input" class="form-input" placeholder="Enter student name" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Roll Number</label>
+                <input type="text" id="roll-input" class="form-input" placeholder="Enter roll number" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Department</label>
+                <select id="dept-input" class="form-input" required>
+                    <option value="">Select department...</option>
+                    <option value="CSE">Computer Science</option>
+                    <option value="ECE">Electronics & Communication</option>
+                    <option value="ME">Mechanical Engineering</option>
+                    <option value="CE">Civil Engineering</option>
+                    <option value="EE">Electrical Engineering</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email (optional)</label>
+                <input type="email" id="email-input" class="form-input" placeholder="student@rvce.edu.in">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Register Student
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🕐 Recently Registered</h2>
+        </div>
+
+        <div class="activity-list" id="recent-students">
+            <div class="empty-state">
+                <div class="empty-state-icon">👥</div>
+                <div class="empty-state-title">No registrations yet</div>
+                <p>Registered students will appear here</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const ZONE = 'Library';
+
+    // Check for pending RFID from attendance scan
+    document.addEventListener('DOMContentLoaded', function () {
+        const pendingRfid = sessionStorage.getItem('pendingRfid');
+        if (pendingRfid) {
+            const data = JSON.parse(pendingRfid);
+            document.getElementById('rfid-input').value = data.rfid_uid;
+            document.getElementById('name-input').focus();
+        }
+    });
+
+    async function registerStudent(e) {
+        e.preventDefault();
+
+        const data = {
+            rfid_uid: document.getElementById('rfid-input').value.trim(),
+            name: document.getElementById('name-input').value.trim(),
+            roll_number: document.getElementById('roll-input').value.trim(),
+            department: document.getElementById('dept-input').value,
+            email: document.getElementById('email-input').value.trim()
+        };
+
+        const result = await API.post('/students', data);
+
+        if (result && result.success) {
+            showToast('Registered!', `${data.name} has been registered`, 'success');
+
+            // Check if we need to return to zone
+            const returnZone = sessionStorage.getItem('currentZone');
+            if (returnZone === ZONE) {
+                sessionStorage.removeItem('pendingRfid');
+                sessionStorage.removeItem('currentZone');
+
+                sessionStorage.setItem('currentStudent', JSON.stringify({
+                    id: result.student?.id || 0,
+                    name: data.name,
+                    roll_number: data.roll_number,
+                    rfid_uid: data.rfid_uid
+                }));
+
+                showToast('Redirecting', 'Taking you back to Library attendance...', 'info');
+                setTimeout(() => window.location.href = '/library/attendance', 1500);
+            } else {
+                document.getElementById('register-form').reset();
+                document.getElementById('rfid-input').focus();
+                loadRecentStudents();
+            }
+        } else {
+            showToast('Error', result?.error || 'Failed to register student', 'error');
+        }
+    }
+
+    async function loadRecentStudents() {
+        const data = await API.get('/students?limit=5');
+        if (!data || !data.success) return;
+
+        const container = document.getElementById('recent-students');
+
+        if (!data.students || data.students.length === 0) {
+            container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">👥</div>
+                <div class="empty-state-title">No registrations yet</div>
+                <p>Registered students will appear here</p>
+            </div>
+        `;
+            return;
+        }
+
+        container.innerHTML = data.students.map(s => `
+        <div class="activity-item">
+            <div class="activity-badge entry">👤</div>
+            <div class="activity-info">
+                <div class="activity-name">${s.name}</div>
+                <div class="activity-roll">${s.roll_number} - ${s.department}</div>
+            </div>
+        </div>
+    `).join('');
+    }
+
+    loadRecentStudents();
+</script>
+{% endblock %}

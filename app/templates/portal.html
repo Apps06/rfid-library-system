@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RVCE Campus Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .portal-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background: var(--bg-primary);
+        }
+        
+        .portal-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .portal-logo {
+            font-size: 72px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .portal-title {
+            font-size: 42px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+        
+        .portal-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+        
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 32px;
+            max-width: 1000px;
+            width: 100%;
+        }
+        
+        .portal-card {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 48px 32px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            transition: height 0.3s ease;
+        }
+        
+        .portal-card.classroom::before {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+        }
+        
+        .portal-card.library::before {
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+        }
+        
+        .portal-card.labs::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+        }
+        
+        .portal-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+        }
+        
+        .portal-card:hover::before {
+            height: 6px;
+        }
+        
+        .portal-card-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+            display: block;
+        }
+        
+        .portal-card-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+        
+        .portal-card.classroom .portal-card-title {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .portal-card.library .portal-card-title {
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .portal-card.labs .portal-card-title {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .portal-card-desc {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        .portal-card-arrow {
+            margin-top: 24px;
+            font-size: 24px;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+            color: var(--text-muted);
+        }
+        
+        .portal-card:hover .portal-card-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        @media (max-width: 768px) {
+            .portal-title {
+                font-size: 32px;
+            }
+            
+            .portal-grid {
+                gap: 20px;
+            }
+            
+            .portal-card {
+                padding: 32px 24px;
+            }
+            
+            .portal-card-icon {
+                font-size: 48px;
+            }
+            
+            .portal-card-title {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="portal-container">
+        <div class="portal-header">
+            <div class="portal-logo">🎓</div>
+            <h1 class="portal-title">RVCE Campus Portal</h1>
+            <p class="portal-subtitle">Select a module to continue</p>
+        </div>
+        
+        <div class="portal-grid">
+            <a href="{{ url_for('views.classroom_dashboard') }}" class="portal-card classroom">
+                <span class="portal-card-icon">🏫</span>
+                <h2 class="portal-card-title">Classroom</h2>
+                <p class="portal-card-desc">Track attendance with RFID scans, manage students, and view attendance logs</p>
+                <div class="portal-card-arrow">→</div>
+            </a>
+            
+            <a href="{{ url_for('views.library_dashboard') }}" class="portal-card library">
+                <span class="portal-card-icon">📚</span>
+                <h2 class="portal-card-title">Library</h2>
+                <p class="portal-card-desc">Borrow books, check availability, manage renewals, and pay overdue fines</p>
+                <div class="portal-card-arrow">→</div>
+            </a>
+            
+            <a href="{{ url_for('views.labs_dashboard') }}" class="portal-card labs">
+                <span class="portal-card-icon">🔬</span>
+                <h2 class="portal-card-title">Labs</h2>
+                <p class="portal-card-desc">Lab attendance, borrow apparatus, track equipment, and manage damage fines</p>
+                <div class="portal-card-arrow">→</div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

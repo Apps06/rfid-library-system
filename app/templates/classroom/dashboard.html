@@ -1,0 +1,103 @@
+{% extends 'classroom/base.html' %}
+
+{% block title %}Dashboard - Classroom{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card inside">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" id="inside-count">-</div>
+        <div class="stat-label">Currently Inside</div>
+    </div>
+    <div class="stat-card entry">
+        <div class="stat-icon">🚶‍♂️</div>
+        <div class="stat-value" id="today-entries">-</div>
+        <div class="stat-label">Today's Entries</div>
+    </div>
+    <div class="stat-card exit">
+        <div class="stat-icon">🚪</div>
+        <div class="stat-value" id="today-exits">-</div>
+        <div class="stat-label">Today's Exits</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-value" id="total-students">-</div>
+        <div class="stat-label">Registered Students</div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📋 Recent Activity</h2>
+        <span class="text-muted" id="last-update">Updating...</span>
+    </div>
+
+    <div class="activity-list" id="activity-list">
+        <div class="empty-state">
+            <div class="empty-state-icon">📡</div>
+            <div class="empty-state-title">Waiting for scans...</div>
+            <p>RFID scans will appear here in real-time</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Load dashboard data
+    async function loadDashboardData() {
+        const data = await API.get('/dashboard/stats');
+        if (!data || !data.success) return;
+
+        // Update stats
+        document.getElementById('inside-count').textContent = data.stats.inside_count;
+        document.getElementById('today-entries').textContent = data.stats.today_entries;
+        document.getElementById('today-exits').textContent = data.stats.today_exits;
+        document.getElementById('total-students').textContent = data.stats.total_students;
+
+        // Update last refresh time
+        document.getElementById('last-update').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+
+        // Update activity list
+        const activityList = document.getElementById('activity-list');
+
+        if (data.recent_activity.length === 0) {
+            activityList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📡</div>
+                <div class="empty-state-title">No activity yet</div>
+                <p>RFID scans will appear here in real-time</p>
+            </div>
+        `;
+            return;
+        }
+
+        activityList.innerHTML = data.recent_activity.map(log => {
+            const isNew = log.student_name && log.student_name.startsWith('New Student');
+            return `
+        <div class="activity-item">
+            <div class="activity-badge ${log.action.toLowerCase()}">
+                ${log.action === 'ENTRY' ? '→' : '←'}
+            </div>
+            <div class="activity-info">
+                <div class="activity-name">
+                    ${log.student_name || 'Unknown'}
+                    ${isNew ? '<span class="badge badge-warning" style="font-size: 10px; margin-left: 5px;">New Card</span>' : ''}
+                </div>
+                <div class="activity-roll">${log.roll_number || log.rfid_uid}</div>
+            </div>
+            <div class="activity-time">
+                <div class="activity-action ${log.action.toLowerCase()}">${log.action}</div>
+                <div>${formatTime(log.timestamp)}</div>
+            </div>
+        </div>
+    `}).join('');
+    }
+
+    // Initial load
+    loadDashboardData();
+</script>
+{% endblock %}

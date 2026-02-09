@@ -1,0 +1,216 @@
+{% extends 'labs/base.html' %}
+
+{% block title %}Borrow/Return - Labs{% endblock %}
+{% block page_title %}Borrow & Return Apparatus{% endblock %}
+
+{% block content %}
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🔧 Borrow Equipment</h2>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Your Student ID (RFID or Roll Number)</label>
+            <input type="text" id="student-id" class="form-input" placeholder="Enter your roll number or scan RFID">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Select Apparatus</label>
+            <select id="apparatus-select" class="form-input">
+                <option value="">Loading...</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%;" onclick="borrowApparatus()">
+            Take Apparatus
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📋 My Borrowed Items</h2>
+            <button class="btn btn-sm btn-secondary" onclick="loadMyApparatus()">Refresh</button>
+        </div>
+
+        <div id="my-apparatus-list">
+            <div class="empty-state">
+                <div class="empty-state-icon">🔧</div>
+                <div class="empty-state-title">Enter Student ID</div>
+                <p>Enter your student ID and click Refresh to view borrowed items</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h2 class="card-title">🔧 All Available Apparatus</h2>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Available</th>
+                    <th>Damage Fine</th>
+                </tr>
+            </thead>
+            <tbody id="apparatus-tbody">
+                <tr>
+                    <td colspan="4" class="text-center text-muted">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allApparatus = [];
+
+    async function loadApparatus() {
+        const data = await API.get('/labs/apparatus');
+        if (!data || !data.success) return;
+
+        allApparatus = data.apparatus;
+
+        // Populate dropdown
+        const select = document.getElementById('apparatus-select');
+        select.innerHTML = '<option value="">Select apparatus...</option>' +
+            allApparatus.filter(a => a.quantity_available > 0).map(a =>
+                `<option value="${a.id}">${a.name} (${a.category}) - ${a.quantity_available} available</option>`
+            ).join('');
+
+        // Populate table
+        const tbody = document.getElementById('apparatus-tbody');
+        tbody.innerHTML = allApparatus.map(a => `
+        <tr>
+            <td><strong>${a.name}</strong></td>
+            <td><span class="category-badge">${a.category}</span></td>
+            <td>
+                ${a.quantity_available > 0
+                ? `<span class="badge badge-success">${a.quantity_available} / ${a.quantity}</span>`
+                : '<span class="badge badge-warning">Not Available</span>'
+            }
+            </td>
+            <td class="text-danger">₹${a.damage_fine}</td>
+        </tr>
+    `).join('');
+    }
+
+    async function borrowApparatus() {
+        const studentId = document.getElementById('student-id').value.trim();
+        const apparatusId = document.getElementById('apparatus-select').value;
+
+        if (!studentId) {
+            showToast('Error', 'Please enter your student ID', 'error');
+            return;
+        }
+
+        if (!apparatusId) {
+            showToast('Error', 'Please select an apparatus', 'error');
+            return;
+        }
+
+        const result = await API.post('/labs/borrow', {
+            student_identifier: studentId,
+            apparatus_id: parseInt(apparatusId)
+        });
+
+        if (result && result.success) {
+            showToast('Success', `${result.borrow.apparatus_name} borrowed successfully!`, 'success');
+            loadApparatus();
+            loadMyApparatus();
+        } else {
+            showToast('Error', result?.error || 'Failed to borrow apparatus', 'error');
+        }
+    }
+
+    async function loadMyApparatus() {
+        const studentId = document.getElementById('student-id').value.trim();
+
+        if (!studentId) {
+            showToast('Error', 'Please enter your student ID', 'error');
+            return;
+        }
+
+        const data = await API.get(`/labs/borrowed?student_identifier=${encodeURIComponent(studentId)}`);
+
+        if (!data || !data.success) {
+            showToast('Error', data?.error || 'Failed to load items', 'error');
+            return;
+        }
+
+        renderMyApparatus(data.borrows);
+    }
+
+    function renderMyApparatus(borrows) {
+        const container = document.getElementById('my-apparatus-list');
+
+        if (borrows.length === 0) {
+            container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">✓</div>
+                <div class="empty-state-title">No borrowed items</div>
+                <p>You have no apparatus currently borrowed</p>
+            </div>
+        `;
+            return;
+        }
+
+        container.innerHTML = `
+        <div class="activity-list">
+            ${borrows.map(b => `
+                <div class="activity-item">
+                    <div class="activity-badge entry">🔧</div>
+                    <div class="activity-info">
+                        <div class="activity-name">
+                            ${b.apparatus_name}
+                            ${b.is_damaged ? '<span class="damaged-badge">DAMAGED</span>' : ''}
+                        </div>
+                        <div class="activity-roll">Borrowed: ${formatDate(b.borrow_date)}</div>
+                    </div>
+                    <div class="activity-time">
+                        ${!b.return_date ? `
+                            <button class="btn btn-sm btn-secondary" onclick="returnApparatus(${b.id}, false)">Return</button>
+                            <button class="btn btn-sm btn-danger" onclick="returnApparatus(${b.id}, true)" ${b.is_damaged ? 'disabled' : ''}>Damaged</button>
+                        ` : '<span class="badge badge-success">Returned</span>'}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    }
+
+    async function returnApparatus(borrowId, isDamaged) {
+        const confirmMsg = isDamaged
+            ? 'Are you sure this apparatus is damaged? A damage fine will be applied.'
+            : 'Return this apparatus?';
+
+        if (!confirm(confirmMsg)) return;
+
+        const result = await API.post('/labs/return', {
+            borrow_id: borrowId,
+            is_damaged: isDamaged
+        });
+
+        if (result && result.success) {
+            if (isDamaged) {
+                showToast('Returned', `Damage fine of ₹${result.damage_fine} applied`, 'warning');
+            } else {
+                showToast('Success', 'Apparatus returned successfully!', 'success');
+            }
+            loadApparatus();
+            loadMyApparatus();
+        } else {
+            showToast('Error', result?.error || 'Failed to return apparatus', 'error');
+        }
+    }
+
+    loadApparatus();
+</script>
+{% endblock %}

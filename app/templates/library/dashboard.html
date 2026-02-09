@@ -1,0 +1,99 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Dashboard - Library{% endblock %}
+{% block page_title %}Library Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card library">
+        <div class="stat-icon">📚</div>
+        <div class="stat-value" id="total-books">-</div>
+        <div class="stat-label">Total Books</div>
+    </div>
+    <div class="stat-card library">
+        <div class="stat-icon">📖</div>
+        <div class="stat-value" id="available-books">-</div>
+        <div class="stat-label">Available</div>
+    </div>
+    <div class="stat-card library">
+        <div class="stat-icon">📋</div>
+        <div class="stat-value" id="borrowed-books">-</div>
+        <div class="stat-label">Borrowed</div>
+    </div>
+    <div class="stat-card" style="--accent-color: #ef4444;">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value text-danger" id="pending-fines">₹0</div>
+        <div class="stat-label">Pending Fines</div>
+    </div>
+</div>
+
+<!-- Recent Borrows -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📋 Recent Book Activity</h2>
+        <span class="text-muted" id="last-update">Updating...</span>
+    </div>
+
+    <div class="activity-list" id="activity-list">
+        <div class="empty-state">
+            <div class="empty-state-icon">📚</div>
+            <div class="empty-state-title">No recent activity</div>
+            <p>Book borrows and returns will appear here</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadLibraryStats() {
+        const data = await API.get('/library/stats');
+        if (!data || !data.success) return;
+
+        document.getElementById('total-books').textContent = data.stats.total_books;
+        document.getElementById('available-books').textContent = data.stats.available_books;
+        document.getElementById('borrowed-books').textContent = data.stats.borrowed_count;
+        document.getElementById('pending-fines').textContent = '₹' + data.stats.pending_fines;
+        document.getElementById('last-update').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+
+        // Render recent activity
+        const activityList = document.getElementById('activity-list');
+
+        if (!data.recent_activity || data.recent_activity.length === 0) {
+            activityList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📚</div>
+                <div class="empty-state-title">No recent activity</div>
+                <p>Book borrows and returns will appear here</p>
+            </div>
+        `;
+            return;
+        }
+
+        activityList.innerHTML = data.recent_activity.map(item => `
+        <div class="activity-item">
+            <div class="activity-badge ${item.return_date ? 'exit' : 'entry'}">
+                ${item.return_date ? '←' : '→'}
+            </div>
+            <div class="activity-info">
+                <div class="activity-name">${item.book_title}</div>
+                <div class="activity-roll">${item.student_name}</div>
+            </div>
+            <div class="activity-time">
+                <div class="activity-action ${item.return_date ? 'exit' : 'entry'}">
+                    ${item.return_date ? 'RETURNED' : 'BORROWED'}
+                </div>
+                <div>${formatDate(item.borrow_date)}</div>
+            </div>
+        </div>
+    `).join('');
+    }
+
+    function onSimulationDateChange(date) {
+        loadLibraryStats();
+    }
+
+    loadLibraryStats();
+</script>
+{% endblock %}

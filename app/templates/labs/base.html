@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Labs - RVCE{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .sidebar.labs-theme .logo-text {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sidebar.labs-theme .nav-link.active {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+        }
+
+        .labs-accent {
+            color: #f59e0b;
+        }
+
+        .stat-card.labs::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+        }
+
+        .damaged-badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .category-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 280px;
+            margin: 20px auto;
+        }
+
+        .qr-code {
+            width: 180px;
+            height: 180px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px auto;
+            border: 2px dashed #ccc;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .payment-info {
+            color: #333;
+        }
+
+        .payment-info h4 {
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+
+        .payment-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ef4444;
+            margin: 12px 0;
+        }
+
+        .payment-account {
+            font-size: 13px;
+            color: #666;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar labs-theme">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🔬</span>
+                    <span class="logo-text">Labs</span>
+                </div>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="{{ url_for('views.index') }}" class="nav-link">
+                        <span class="nav-icon">🏠</span>
+                        <span>Portal Home</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('views.labs_dashboard') }}"
+                        class="nav-link {% if request.endpoint == 'views.labs_dashboard' %}active{% endif %}">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('views.labs_attendance') }}"
+                        class="nav-link {% if request.endpoint == 'views.labs_attendance' %}active{% endif %}">
+                        <span class="nav-icon">📋</span>
+                        <span>Attendance</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('views.labs_borrow') }}"
+                        class="nav-link {% if request.endpoint == 'views.labs_borrow' %}active{% endif %}">
+                        <span class="nav-icon">🔧</span>
+                        <span>Borrow/Return</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('views.labs_payfine') }}"
+                        class="nav-link {% if request.endpoint == 'views.labs_payfine' %}active{% endif %}">
+                        <span class="nav-icon">💰</span>
+                        <span>Pay Fine</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('views.labs_register') }}"
+                        class="nav-link {% if request.endpoint == 'views.labs_register' %}active{% endif %}">
+                        <span class="nav-icon">✏️</span>
+                        <span>Register</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator online">
+                    <span class="status-dot"></span>
+                    <span>System Online</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                <div class="header-actions">
+                    <div class="datetime" id="datetime"></div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast notification container -->
+    <div id="toast-container"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

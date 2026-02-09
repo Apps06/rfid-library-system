@@ -10,6 +10,7 @@ class AttendanceLog(db.Model):
     action = db.Column(db.String(10), nullable=False)  # 'ENTRY' or 'EXIT'
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     device_id = db.Column(db.String(50), default='GATE_01')  # Identify which reader
+    zone = db.Column(db.String(50), default='Library')  # Library, Lab, Classroom
     
     def to_dict(self):
         return {
@@ -20,7 +21,8 @@ class AttendanceLog(db.Model):
             'rfid_uid': self.rfid_uid,
             'action': self.action,
             'timestamp': self.timestamp.isoformat() + 'Z' if self.timestamp else None,
-            'device_id': self.device_id
+            'device_id': self.device_id,
+            'zone': self.zone
         }
     
     def __repr__(self):

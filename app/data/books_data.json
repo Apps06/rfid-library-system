@@ -1,0 +1,162 @@
+[
+    {
+        "id": 1,
+        "title": "Introduction to Algorithms",
+        "author": "Thomas H. Cormen",
+        "isbn": "978-0262033848",
+        "is_important": true,
+        "quantity": 5
+    },
+    {
+        "id": 2,
+        "title": "Design Patterns",
+        "author": "Gang of Four",
+        "isbn": "978-0201633610",
+        "is_important": true,
+        "quantity": 3
+    },
+    {
+        "id": 3,
+        "title": "Clean Code",
+        "author": "Robert C. Martin",
+        "isbn": "978-0132350884",
+        "is_important": false,
+        "quantity": 8
+    },
+    {
+        "id": 4,
+        "title": "The Pragmatic Programmer",
+        "author": "David Thomas",
+        "isbn": "978-0135957059",
+        "is_important": false,
+        "quantity": 6
+    },
+    {
+        "id": 5,
+        "title": "Structure and Interpretation of Computer Programs",
+        "author": "Harold Abelson",
+        "isbn": "978-0262510875",
+        "is_important": true,
+        "quantity": 4
+    },
+    {
+        "id": 6,
+        "title": "Computer Networks",
+        "author": "Andrew S. Tanenbaum",
+        "isbn": "978-0132126953",
+        "is_important": false,
+        "quantity": 7
+    },
+    {
+        "id": 7,
+        "title": "Operating System Concepts",
+        "author": "Abraham Silberschatz",
+        "isbn": "978-1118063330",
+        "is_important": true,
+        "quantity": 5
+    },
+    {
+        "id": 8,
+        "title": "Database System Concepts",
+        "author": "Abraham Silberschatz",
+        "isbn": "978-0078022159",
+        "is_important": false,
+        "quantity": 6
+    },
+    {
+        "id": 9,
+        "title": "Artificial Intelligence: A Modern Approach",
+        "author": "Stuart Russell",
+        "isbn": "978-0136042594",
+        "is_important": true,
+        "quantity": 4
+    },
+    {
+        "id": 10,
+        "title": "Computer Architecture",
+        "author": "John L. Hennessy",
+        "isbn": "978-0123838728",
+        "is_important": false,
+        "quantity": 5
+    },
+    {
+        "id": 11,
+        "title": "Python Crash Course",
+        "author": "Eric Matthes",
+        "isbn": "978-1593279288",
+        "is_important": false,
+        "quantity": 10
+    },
+    {
+        "id": 12,
+        "title": "JavaScript: The Good Parts",
+        "author": "Douglas Crockford",
+        "isbn": "978-0596517748",
+        "is_important": false,
+        "quantity": 7
+    },
+    {
+        "id": 13,
+        "title": "The C Programming Language",
+        "author": "Brian W. Kernighan",
+        "isbn": "978-0131103627",
+        "is_important": true,
+        "quantity": 4
+    },
+    {
+        "id": 14,
+        "title": "Machine Learning",
+        "author": "Tom M. Mitchell",
+        "isbn": "978-0070428072",
+        "is_important": false,
+        "quantity": 6
+    },
+    {
+        "id": 15,
+        "title": "Deep Learning",
+        "author": "Ian Goodfellow",
+        "isbn": "978-0262035613",
+        "is_important": true,
+        "quantity": 3
+    },
+    {
+        "id": 16,
+        "title": "Data Structures and Algorithms in Java",
+        "author": "Michael T. Goodrich",
+        "isbn": "978-1118771334",
+        "is_important": false,
+        "quantity": 8
+    },
+    {
+        "id": 17,
+        "title": "Computer Graphics: Principles and Practice",
+        "author": "John F. Hughes",
+        "isbn": "978-0321399526",
+        "is_important": false,
+        "quantity": 4
+    },
+    {
+        "id": 18,
+        "title": "Discrete Mathematics and Its Applications",
+        "author": "Kenneth H. Rosen",
+        "isbn": "978-0073383095",
+        "is_important": false,
+        "quantity": 9
+    },
+    {
+        "id": 19,
+        "title": "Software Engineering",
+        "author": "Ian Sommerville",
+        "isbn": "978-0133943030",
+        "is_important": false,
+        "quantity": 7
+    },
+    {
+        "id": 20,
+        "title": "Compilers: Principles, Techniques, and Tools",
+        "author": "Alfred V. Aho",
+        "isbn": "978-0321486813",
+        "is_important": true,
+        "quantity": 3
+    }
+]

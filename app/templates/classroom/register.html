@@ -1,0 +1,95 @@
+{% extends 'classroom/base.html' %}
+
+{% block title %}Register - Classroom{% endblock %}
+{% block page_title %}Register New Student{% endblock %}
+
+{% block content %}
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">➕ Register Student</h2>
+        </div>
+
+        <form id="register-form">
+            <div class="form-group">
+                <label class="form-label">RFID UID *</label>
+                <input type="text" name="rfid_uid" id="rfid-input" class="form-input"
+                    placeholder="Scan RFID card or enter UID" required>
+                <small class="text-muted">Scan the RFID card to auto-fill this field</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <input type="text" name="name" class="form-input" placeholder="Enter student name" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Roll Number *</label>
+                <input type="text" name="roll_number" class="form-input" placeholder="e.g., 1RV20CS001" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Department</label>
+                <select name="department" class="form-input">
+                    <option value="">Select Department</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Mechanical">Mechanical</option>
+                    <option value="Civil">Civil</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Information Science">Information Science</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input" placeholder="student@rvce.edu.in">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Register Student</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📡 RFID Scanner Status</h2>
+        </div>
+
+        <div class="empty-state">
+            <div class="empty-state-icon">📡</div>
+            <div class="empty-state-title">Ready to Scan</div>
+            <p>Place an RFID card near the reader to detect it</p>
+        </div>
+
+        <div id="scan-result" style="display: none;">
+            <div class="activity-item">
+                <div class="activity-badge entry">✓</div>
+                <div class="activity-info">
+                    <div class="activity-name">Card Detected</div>
+                    <div class="activity-roll" id="detected-uid">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('register-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+
+        const result = await API.post('/students', data);
+
+        if (result && result.success) {
+            showToast('Success', 'Student registered successfully!', 'success');
+            this.reset();
+        } else {
+            showToast('Error', result?.error || 'Failed to register student', 'error');
+        }
+    });
+</script>
+{% endblock %}

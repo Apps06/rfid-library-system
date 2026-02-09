@@ -1,0 +1,152 @@
+{% extends 'library/base.html' %}
+
+{% block title %}My Books - Library{% endblock %}
+{% block page_title %}My Borrowed Books{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📚 My Borrowed Books</h2>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label">Your Student ID (RFID or Roll Number)</label>
+        <div style="display: flex; gap: 12px; max-width: 500px;">
+            <input type="text" id="student-id" class="form-input" placeholder="Enter your roll number or scan RFID">
+            <button class="btn btn-primary" onclick="loadMyBooks()">Load Books</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Book</th>
+                    <th>Author</th>
+                    <th>Borrowed On</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Renewals</th>
+                    <th>Fine</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="mybooks-tbody">
+                <tr>
+                    <td colspan="8" class="text-center text-muted">Enter your student ID to view borrowed books</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadMyBooks() {
+        const studentId = document.getElementById('student-id').value.trim();
+
+        if (!studentId) {
+            showToast('Error', 'Please enter your student ID', 'error');
+            return;
+        }
+
+        const data = await API.get(`/library/borrowed?student_identifier=${encodeURIComponent(studentId)}&sim_date=${getSimulationDate()}`);
+
+        if (!data || !data.success) {
+            showToast('Error', data?.error || 'Failed to load books', 'error');
+            return;
+        }
+
+        renderMyBooks(data.borrows);
+    }
+
+    function renderMyBooks(borrows) {
+        const tbody = document.getElementById('mybooks-tbody');
+
+        if (borrows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No borrowed books found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = borrows.map(b => {
+            const simDate = new Date(getSimulationDate());
+            const dueDate = new Date(b.due_date);
+            const isOverdue = simDate > dueDate && !b.return_date;
+            const daysOverdue = isOverdue ? Math.floor((simDate - dueDate) / (1000 * 60 * 60 * 24)) : 0;
+            const canExtend = b.renewal_count < 2 && !b.is_important && !b.return_date;
+
+            return `
+        <tr>
+            <td>
+                <strong>${b.book_title}</strong>
+                ${b.is_important ? '<span class="important-badge">IMPORTANT</span>' : ''}
+            </td>
+            <td>${b.book_author}</td>
+            <td>${formatDate(b.borrow_date)}</td>
+            <td>${formatDate(b.due_date)}</td>
+            <td>
+                ${b.return_date
+                    ? '<span class="badge badge-success">Returned</span>'
+                    : isOverdue
+                        ? `<span class="badge badge-warning">Overdue (${daysOverdue} days)</span>`
+                        : '<span class="badge badge-info">Active</span>'
+                }
+            </td>
+            <td>${b.renewal_count} / 2</td>
+            <td class="text-danger">
+                ${b.fine_amount > 0
+                    ? (b.fine_paid ? '<s>₹' + b.fine_amount + '</s> Paid' : '₹' + b.fine_amount)
+                    : '-'
+                }
+            </td>
+            <td>
+                ${!b.return_date ? `
+                    <button class="btn btn-sm btn-secondary" onclick="extendBook(${b.id})" ${!canExtend ? 'disabled title="Cannot extend"' : ''}>
+                        Extend
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="returnBook(${b.id})">
+                        Return
+                    </button>
+                ` : '-'}
+            </td>
+        </tr>
+    `}).join('');
+    }
+
+    async function extendBook(borrowId) {
+        const result = await API.post('/library/extend', { borrow_id: borrowId });
+
+        if (result && result.success) {
+            showToast('Success', `Book extended! New due date: ${formatDate(result.borrow.due_date)}`, 'success');
+            loadMyBooks();
+        } else {
+            showToast('Error', result?.error || 'Failed to extend book', 'error');
+        }
+    }
+
+    async function returnBook(borrowId) {
+        const result = await API.post('/library/return', {
+            borrow_id: borrowId,
+            sim_date: getSimulationDate()
+        });
+
+        if (result && result.success) {
+            if (result.fine_amount > 0) {
+                showToast('Book Returned', `Fine of ₹${result.fine_amount} applied for late return`, 'warning');
+            } else {
+                showToast('Success', 'Book returned successfully!', 'success');
+            }
+            loadMyBooks();
+        } else {
+            showToast('Error', result?.error || 'Failed to return book', 'error');
+        }
+    }
+
+    function onSimulationDateChange(date) {
+        if (document.getElementById('student-id').value.trim()) {
+            loadMyBooks();
+        }
+    }
+</script>
+{% endblock %}
