@@ -75,13 +75,18 @@ async function loadDashboardData() {
         return;
     }
     
-    activityList.innerHTML = data.recent_activity.map(log => `
+    activityList.innerHTML = data.recent_activity.map(log => {
+        const isNew = log.student_name && log.student_name.startsWith('New Student');
+        return `
         <div class="activity-item">
             <div class="activity-badge ${log.action.toLowerCase()}">
                 ${log.action === 'ENTRY' ? '→' : '←'}
             </div>
             <div class="activity-info">
-                <div class="activity-name">${log.student_name || 'Unknown'}</div>
+                <div class="activity-name">
+                    ${log.student_name || 'Unknown'}
+                    ${isNew ? '<span class="badge badge-warning" style="font-size: 10px; margin-left: 5px;">New Card</span>' : ''}
+                </div>
                 <div class="activity-roll">${log.roll_number || log.rfid_uid}</div>
             </div>
             <div class="activity-time">
@@ -89,7 +94,7 @@ async function loadDashboardData() {
                 <div>${formatTime(log.timestamp)}</div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 // Initial load

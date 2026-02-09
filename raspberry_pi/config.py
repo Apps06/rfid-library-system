@@ -4,7 +4,7 @@
 
 # Cloud API Configuration
 # Replace with your actual server URL when deployed
-API_URL = "http://localhost:5000"  # Local testing
+API_URL = "http://192.168.1.12:5000"  # Local testing (using 192.168.1.12)
 # API_URL = "https://your-app.onrender.com"  # Production (e.g., Render)
 # API_URL = "https://your-app.railway.app"   # Production (e.g., Railway)
 

@@ -23,12 +23,20 @@ def scan_rfid():
     # Find student by RFID
     student = Student.query.filter_by(rfid_uid=rfid_uid, is_active=True).first()
     
+    is_new_registration = False
     if not student:
-        return jsonify({
-            'success': False,
-            'error': 'Unknown RFID card',
-            'rfid_uid': rfid_uid
-        }), 404
+        # AUTO-REGISTRATION LOGIC
+        print(f"✨ Auto-registering new card: {rfid_uid}")
+        student = Student(
+            rfid_uid=rfid_uid,
+            name=f"New Student ({rfid_uid})",
+            roll_number=f"TEMP-{rfid_uid}",
+            department="Auto-Registered",
+            is_inside=False # Will be set to True below
+        )
+        db.session.add(student)
+        db.session.commit()
+        is_new_registration = True
     
     # Toggle entry/exit based on current state
     if student.is_inside:
@@ -58,7 +66,7 @@ def scan_rfid():
             'roll_number': student.roll_number,
             'department': student.department
         },
-        'timestamp': log.timestamp.isoformat()
+        'timestamp': log.timestamp.isoformat() + 'Z'
     })
 
 
@@ -85,9 +93,23 @@ def create_student():
             return jsonify({'success': False, 'error': f'{field} is required'}), 400
     
     # Check if RFID or roll number already exists
-    if Student.query.filter_by(rfid_uid=data['rfid_uid'].upper()).first():
-        return jsonify({'success': False, 'error': 'RFID UID already registered'}), 409
-    
+    existing = Student.query.filter_by(rfid_uid=data['rfid_uid'].upper()).first()
+    if existing:
+        # If it's an auto-registered placeholder, perform a "Takeover" (Update)
+        if existing.department == 'Auto-Registered' or existing.name.startswith('New Student'):
+            existing.name = data['name'].strip()
+            existing.roll_number = data['roll_number'].strip()
+            existing.department = data.get('department', '')
+            existing.email = data.get('email', '')
+            db.session.commit()
+            return jsonify({
+                'success': True, 
+                'student': existing.to_dict(), 
+                'message': 'Merged with auto-registered record'
+            }), 200
+        else:
+            return jsonify({'success': False, 'error': 'RFID UID already registered'}), 409
+            
     if Student.query.filter_by(roll_number=data['roll_number']).first():
         return jsonify({'success': False, 'error': 'Roll number already exists'}), 409
     
@@ -135,6 +157,13 @@ def update_student(id):
         if existing and existing.id != id:
             return jsonify({'success': False, 'error': 'RFID UID already in use'}), 409
         student.rfid_uid = data['rfid_uid'].upper().strip()
+
+    if 'roll_number' in data:
+        # Check for duplicate roll number
+        existing_roll = Student.query.filter_by(roll_number=data['roll_number']).first()
+        if existing_roll and existing_roll.id != id:
+            return jsonify({'success': False, 'error': 'Roll number already in use'}), 409
+        student.roll_number = data['roll_number'].strip()
     
     db.session.commit()
     return jsonify({'success': True, 'student': student.to_dict()})
@@ -144,6 +173,10 @@ def update_student(id):
 def delete_student(id):
     """Delete a student"""
     student = Student.query.get_or_404(id)
+    
+    # Delete related attendance logs first
+    AttendanceLog.query.filter_by(student_id=id).delete()
+    
     db.session.delete(student)
     db.session.commit()
     return jsonify({'success': True, 'message': 'Student deleted'})

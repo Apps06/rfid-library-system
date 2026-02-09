@@ -19,7 +19,7 @@ class AttendanceLog(db.Model):
             'roll_number': self.student.roll_number if self.student else None,
             'rfid_uid': self.rfid_uid,
             'action': self.action,
-            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
+            'timestamp': self.timestamp.isoformat() + 'Z' if self.timestamp else None,
             'device_id': self.device_id
         }
     

@@ -27,7 +27,7 @@ class Student(db.Model):
             'email': self.email,
             'is_active': self.is_active,
             'is_inside': self.is_inside,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': (self.created_at.isoformat() + 'Z') if self.created_at else None
         }
     
     def __repr__(self):
