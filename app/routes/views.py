@@ -45,6 +45,12 @@ def attendance():
     """Attendance logs page"""
     return render_template('attendance.html')
 
+@views_bp.route('/manage-books')
+@login_required
+def manage_books():
+    """Admin book management page"""
+    return render_template('admin_books.html')
+
 @views_bp.route('/register')
 def register():
     """Register new student with RFID"""
@@ -105,4 +111,4 @@ def admin_register():
 def logout():
     """Logout admin"""
     logout_user()
-    return redirect(url_for('views.login'))
+    return redirect(url_for('views.index'))

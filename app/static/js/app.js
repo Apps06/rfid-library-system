@@ -60,7 +60,12 @@ const API = {
     async get(endpoint) {
         try {
             const response = await fetch(`/api${endpoint}`);
-            return await response.json();
+            const result = await response.json();
+            if (!response.ok && !result.success) {
+                // Let the caller handle it if it's a JSON error
+                return result;
+            }
+            return result;
         } catch (error) {
             console.error('API Error:', error);
             showToast('Error', 'Failed to fetch data', 'error');
@@ -75,10 +80,12 @@ const API = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            return await response.json();
+            const result = await response.json();
+            // If the server returns a 4xx/5xx but with JSON result.error, return it
+            return result;
         } catch (error) {
             console.error('API Error:', error);
-            showToast('Error', 'Failed to send data', 'error');
+            showToast('Connection Error', 'Failed to reach the server', 'error');
             return null;
         }
     },
@@ -90,10 +97,11 @@ const API = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            return await response.json();
+            const result = await response.json();
+            return result;
         } catch (error) {
             console.error('API Error:', error);
-            showToast('Error', 'Failed to update data', 'error');
+            showToast('Connection Error', 'Failed to reach the server', 'error');
             return null;
         }
     },
@@ -103,10 +111,11 @@ const API = {
             const response = await fetch(`/api${endpoint}`, {
                 method: 'DELETE'
             });
-            return await response.json();
+            const result = await response.json();
+            return result;
         } catch (error) {
             console.error('API Error:', error);
-            showToast('Error', 'Failed to delete', 'error');
+            showToast('Connection Error', 'Failed to reach the server', 'error');
             return null;
         }
     }

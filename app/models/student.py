@@ -16,6 +16,7 @@ class Student(db.Model):
     
     # Relationships
     attendance_logs = db.relationship('AttendanceLog', backref='student', lazy='dynamic')
+    borrow_records = db.relationship('BorrowRecord', backref='student', lazy='dynamic')
     
     def to_dict(self):
         return {

@@ -109,7 +109,28 @@
 <script>
 // Focus on RFID input
 const rfidInput = document.getElementById('rfid-input');
-rfidInput.focus();
+const nameInput = document.querySelector('input[name="name"]');
+
+// Check for pre-filled UID from zone redirect
+function checkPendingRegistration() {
+    const pending = sessionStorage.getItem('currentStudent');
+    if (pending) {
+        try {
+            const student = JSON.parse(pending);
+            if (student.rfid_uid && student.name.startsWith('New Student')) {
+                rfidInput.value = student.rfid_uid;
+                nameInput.focus(); // Jump straight to name
+                showToast('Pre-filled', `RFID UID: ${student.rfid_uid}`, 'info');
+            }
+        } catch (e) {
+            console.error("Error parsing pending registration", e);
+        }
+    } else {
+        rfidInput.focus();
+    }
+}
+
+checkPendingRegistration();
 
 // Poll for latest RFID scan
 let lastProcessedTime = null;

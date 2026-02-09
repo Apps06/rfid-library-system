@@ -33,35 +33,151 @@
             </div>
         </div>
 
-        <div class="grid-2">
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav" style="display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid var(--border); padding-bottom: 12px;">
+            <button class="tab-btn active" id="tab-attendance" onclick="switchTab('attendance')">🕒 Check-in History</button>
+            <button class="tab-btn" id="tab-borrowing" onclick="switchTab('borrowing')">📖 Book Borrowing</button>
+            <button class="tab-btn" id="tab-fines" onclick="switchTab('fines')">💰 My Fines</button>
+        </div>
+
+        <!-- Attendance Tab Pane -->
+        <div id="pane-attendance" class="tab-pane active">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">📖 Book Borrowing</h2>
-                </div>
-                <div class="empty-state" style="padding: 32px;">
-                    <div class="empty-state-icon">📚</div>
-                    <div class="empty-state-title">Coming Soon</div>
-                    <p>Book borrowing and return tracking will be available here.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">🕐 Your History</h2>
+                    <h2 class="card-title">🕐 Visit History</h2>
                 </div>
                 <div class="activity-list" id="history-list">
                     <div class="text-center text-muted">Loading...</div>
                 </div>
             </div>
         </div>
+
+        <!-- Borrowing Tab Pane -->
+        <div id="pane-borrowing" class="tab-pane" style="display: none;">
+            <div class="grid-2">
+                <!-- Book Borrowing & Search -->
+                <div class="card">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 class="card-title">📚 Library Catalog</h2>
+                    </div>
+                    <div class="form-group" style="margin-top: 16px;">
+                        <input type="text" id="book-search" class="form-input" placeholder="Search title, author, or ISBN..." oninput="searchBooks()">
+                    </div>
+                    <div id="book-list" class="activity-list" style="max-height: 440px; overflow-y: auto; margin-top: 12px;">
+                        <!-- Books will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- My Active Borrows -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📖 Your Borrowed Books</h2>
+                    </div>
+                    <div id="borrow-list" class="activity-list" style="margin-top: 16px;">
+                        <!-- Borrows will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- STYLES -->
+<style>
+.tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+.tab-btn:hover { background: var(--hover-bg); color: var(--text-primary); }
+.tab-btn.active {
+    background: var(--primary);
+    color: white;
+}
+.tab-pane { transition: opacity 0.3s ease; }
+</style>
+
+<!-- UPI Payment Modal -->
+<div id="payment-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content text-center" style="max-width: 400px;">
+        <h2 style="margin-bottom: 20px;">💳 Pay Overdue Fine</h2>
+        <div id="payment-details" style="margin-bottom: 24px;">
+            <p class="text-muted">Scan the QR code to pay using any UPI app</p>
+            <h3 id="fine-amount-display" style="font-size: 32px; color: var(--error); margin: 16px 0;">₹0.00</h3>
+        </div>
+        
+        <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 24px; display: inline-block;">
+            <!-- Simulated QR Code -->
+            <div style="width: 200px; height: 200px; background: #000; display: flex; align-items: center; justify-content: center; position: relative;">
+                <div style="width: 180px; height: 180px; background: white; padding: 10px;">
+                    <div style="width: 100%; height: 100%; background: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 20px 20px;"></div>
+                </div>
+                <div style="position: absolute; width: 40px; height: 40px; background: white; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 20px;">🔗</span>
+                </div>
+            </div>
+        </div>
+        
+        <p style="font-size: 14px; margin-bottom: 24px;">Merchant: <strong>Library Fine Portal</strong><br>VPA: library@attendance</p>
+        
+        <div style="display: flex; gap: 12px;">
+            <button class="btn btn-secondary" onclick="closePaymentModal()" style="flex: 1;">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmPayment()" style="flex: 2;">✅ Confirm Payment</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+.modal-content {
+    background: var(--card-bg);
+    padding: 32px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    width: 90%;
+}
+.book-item {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.book-info { flex: 1; }
+.book-title { font-weight: 600; color: var(--text-primary); }
+.book-meta { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.borrow-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.borrow-badge.available { background: var(--success-bg); color: var(--success); }
+.borrow-badge.unavailable { background: var(--error-bg); color: var(--error); }
+.borrow-badge.important { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning); }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
 const ZONE = 'Library';
 let lastProcessedTime = null;
+let currentStudentId = null;
+let activePaymentBorrowId = null;
 
 // Poll for RFID scans
 setInterval(async () => {
@@ -72,23 +188,15 @@ setInterval(async () => {
             const logTime = new Date(latest.timestamp).getTime();
             const now = new Date().getTime();
             
-            // If scan happened in last 5 seconds and is newer than our last check
             if (now - logTime < 5000 && (!lastProcessedTime || logTime > lastProcessedTime)) {
                 lastProcessedTime = logTime;
                 
-                // Update zone for this log if it was an entry
                 if (latest.action === 'ENTRY') {
-                    // Check if student is new
                     const isNew = latest.student_name && latest.student_name.startsWith('New Student');
-                    
                     if (isNew) {
-                        // Store student info for registration
                         sessionStorage.setItem('currentStudent', JSON.stringify({
-                            id: latest.student_id,
-                            name: latest.student_name,
-                            roll_number: latest.roll_number,
-                            rfid_uid: latest.rfid_uid,
-                            logId: latest.id
+                            id: latest.student_id, name: latest.student_name,
+                            roll_number: latest.roll_number, rfid_uid: latest.rfid_uid, logId: latest.id
                         }));
                         sessionStorage.setItem('currentZone', ZONE);
                         showToast('New Card Detected', 'Please register your details', 'info');
@@ -97,22 +205,15 @@ setInterval(async () => {
                     }
 
                     await API.put(`/attendance/${latest.id}/zone`, { zone: ZONE });
-                    
-                    // Store student info
-                    sessionStorage.setItem('currentStudent', JSON.stringify({
-                        id: latest.student_id,
-                        name: latest.student_name,
-                        roll_number: latest.roll_number,
-                        rfid_uid: latest.rfid_uid,
-                        logId: latest.id
-                    }));
+                    const studentData = {
+                        id: latest.student_id, name: latest.student_name,
+                        roll_number: latest.roll_number, rfid_uid: latest.rfid_uid, logId: latest.id
+                    };
+                    sessionStorage.setItem('currentStudent', JSON.stringify(studentData));
                     sessionStorage.setItem('currentZone', ZONE);
-                    
-                    // Show sidebar and dashboard
                     updateSidebarVisibility();
-                    showDashboard(latest);
+                    showDashboard(studentData);
                 } else {
-                    // It's an EXIT, redirect to home
                     showToast('Goodbye!', 'Checking out...', 'info');
                     setTimeout(() => window.location.href = '/', 1000);
                 }
@@ -123,18 +224,206 @@ setInterval(async () => {
     }
 }, 1000);
 
-function showDashboard(log) {
+function showDashboard(student) {
+    currentStudentId = student.id;
     document.getElementById('scan-card').style.display = 'none';
     document.getElementById('student-dashboard').style.display = 'block';
     
-    document.getElementById('student-name').textContent = log.student_name || 'New Student';
-    document.getElementById('student-roll').textContent = ' | ' + (log.roll_number || log.rfid_uid);
+    document.getElementById('student-name').textContent = student.name || 'Student';
+    document.getElementById('student-roll').textContent = ' | ' + (student.roll_number || student.rfid_uid);
     
-    showToast('Welcome!', `Checked in to ${ZONE}`, 'success');
+    showToast('Welcome!', `Logged into ${ZONE}`, 'success');
     
-    loadHistory(log.student_id);
+    searchBooks(); // Load initial catalog
+    loadBorrows();
+    loadHistory(student.id);
 }
 
+// --- Tab Logic ---
+function switchTab(tabName) {
+    // Buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    
+    // Panes
+    document.querySelectorAll('.tab-pane').forEach(pane => pane.style.display = 'none');
+    document.getElementById(`pane-${tabName}`).style.display = 'block';
+    
+    if (tabName === 'borrowing') {
+        searchBooks();
+        loadBorrows();
+    } else if (tabName === 'fines') {
+        loadFines();
+    }
+}
+
+async function loadFines() {
+    if (!currentStudentId) return;
+    const response = await API.get(`/borrow?student_id=${currentStudentId}`);
+    const container = document.getElementById('fines-list');
+    const totalDisplay = document.getElementById('total-fine-display');
+    
+    if (response && response.success) {
+        const activeFines = response.borrows.filter(b => b.fine_amount > 0 && !b.fine_paid);
+        const total = activeFines.reduce((sum, b) => sum + b.fine_amount, 0);
+        
+        totalDisplay.textContent = `Total: ₹${total.toFixed(2)}`;
+        
+        if (activeFines.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted p-3">No pending fines! Keep it up. 🌟</div>';
+            return;
+        }
+        
+        container.innerHTML = activeFines.map(b => `
+            <div class="activity-item" style="padding: 16px;">
+                <div style="flex: 1;">
+                    <div class="book-title">${b.book_title}</div>
+                    <div class="book-meta" style="color: var(--error);">Overdue since: ${formatDate(b.due_date)}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 700; color: var(--error); font-size: 18px; margin-bottom: 8px;">₹${b.fine_amount.toFixed(2)}</div>
+                    <button class="btn btn-sm btn-primary" onclick="openPaymentModal(${b.id}, ${b.fine_amount})">Pay Now</button>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+// --- Library Functions ---
+
+async function searchBooks() {
+    const query = document.getElementById('book-search').value;
+    const response = await API.get(`/books?search=${encodeURIComponent(query)}`);
+    const container = document.getElementById('book-list');
+    
+    if (response && response.success) {
+        if (response.books.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted p-3">No books found</div>';
+            return;
+        }
+        
+        container.innerHTML = response.books.map(book => `
+            <div class="book-item">
+                <div class="book-info">
+                    <div class="book-title">${book.title} ${book.is_important ? '<span class="borrow-badge important">IMPORTANT</span>' : ''}</div>
+                    <div class="book-meta">By ${book.author} • ISBN: ${book.isbn}</div>
+                    <div class="book-meta">Available: <strong>${book.available_copies}/${book.total_copies}</strong></div>
+                </div>
+                ${book.available_copies > 0 ? 
+                    `<button class="btn btn-sm btn-primary" onclick="borrowBook(${book.id})">Borrow</button>` :
+                    `<span class="borrow-badge unavailable">Out of Stock</span>`
+                }
+            </div>
+        `).join('');
+    }
+}
+
+async function loadBorrows() {
+    if (!currentStudentId) return;
+    const response = await API.get(`/borrow?student_id=${currentStudentId}`);
+    const container = document.getElementById('borrow-list');
+    
+    if (response && response.success) {
+        if (response.borrows.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted p-3">No books currently borrowed</div>';
+            return;
+        }
+        
+        container.innerHTML = response.borrows.map(b => {
+            const dueDate = new Date(b.due_date);
+            const isOverdue = new Date() > dueDate;
+            
+            return `
+                <div class="activity-item" style="flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                        <div class="book-title">${b.book_title}</div>
+                        <span class="borrow-badge ${isOverdue ? 'unavailable' : 'available'}">${b.status}</span>
+                    </div>
+                    <div class="book-meta">Due: <strong style="${isOverdue ? 'color: var(--error)' : ''}">${formatDate(b.due_date)}</strong></div>
+                    
+                    ${b.fine_amount > 0 ? `
+                        <div style="background: var(--error-bg); padding: 8px; border-radius: 8px; width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--error); font-weight: 600;">Fine: ₹${b.fine_amount.toFixed(2)}</span>
+                            ${!b.fine_paid ? `<button class="btn btn-sm btn-primary" onclick="openPaymentModal(${b.id}, ${b.fine_amount})">Pay Fine</button>` : '<span>✅ Paid</span>'}
+                        </div>
+                    ` : ''}
+
+                    <div style="display: flex; gap: 8px; margin-top: 4px; width: 100%;">
+                        <button class="btn btn-sm btn-secondary" style="flex: 1;" onclick="returnBook(${b.id})" ${(!b.fine_paid && b.fine_amount > 0) ? 'disabled' : ''}>Return Book</button>
+                        <button class="btn btn-sm btn-primary" style="flex: 1;" onclick="extendBorrow(${b.id})" ${b.extensions_used >= 2 ? 'disabled' : ''}>
+                            Extend (${b.extensions_used}/2)
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+async function borrowBook(bookId) {
+    const result = await API.post('/borrow', { book_id: bookId, student_id: currentStudentId });
+    if (result.success) {
+        showToast('Success!', 'Book borrowed successfully', 'success');
+        searchBooks();
+        loadBorrows();
+    } else {
+        showToast('Error', result.error || 'Failed to borrow book', 'error');
+    }
+}
+
+async function returnBook(borrowId) {
+    const result = await API.put(`/borrow/${borrowId}/return`);
+    if (result.success) {
+        showToast('Returned!', 'Book has been returned', 'success');
+        searchBooks();
+        loadBorrows();
+    } else {
+        showToast('Error', result.error || 'Failed to return book', 'error');
+    }
+}
+
+async function extendBorrow(borrowId) {
+    const result = await API.put(`/borrow/${borrowId}/extend`);
+    if (result.success) {
+        showToast('Extended!', result.message, 'success');
+        loadBorrows();
+    } else {
+        showToast('Action Blocked', result.error, 'error');
+    }
+}
+
+// --- Payment Logic ---
+
+function openPaymentModal(borrowId, amount) {
+    activePaymentBorrowId = borrowId;
+    document.getElementById('fine-amount-display').textContent = `₹${amount.toFixed(2)}`;
+    document.getElementById('payment-modal').style.display = 'flex';
+}
+
+function closePaymentModal() {
+    document.getElementById('payment-modal').style.display = 'none';
+    activePaymentBorrowId = null;
+}
+
+async function confirmPayment() {
+    if (!activePaymentBorrowId) return;
+    const result = await API.post(`/fines/${activePaymentBorrowId}/pay`);
+    if (result.success) {
+        showToast('Payment Successful', 'Fine has been cleared', 'success');
+        closePaymentModal();
+        loadBorrows();
+    } else {
+        showToast('Payment Failed', result.error, 'error');
+    }
+}
+
+// Helper: Format Date
+function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Helper: Load History (Attendance)
 async function loadHistory(studentId) {
     const response = await API.get(`/attendance?student_id=${studentId}&per_page=5`);
     const list = document.getElementById('history-list');
@@ -144,9 +433,7 @@ async function loadHistory(studentId) {
         if (zoneLogs.length > 0) {
             list.innerHTML = zoneLogs.map(log => `
                 <div class="activity-item">
-                    <div class="activity-badge ${log.action.toLowerCase()}">
-                        ${log.action === 'ENTRY' ? '→' : '←'}
-                    </div>
+                    <div class="activity-badge ${log.action.toLowerCase()}">${log.action === 'ENTRY' ? '→' : '←'}</div>
                     <div class="activity-info">
                         <div class="activity-action ${log.action.toLowerCase()}">${log.action}</div>
                     </div>
@@ -154,10 +441,10 @@ async function loadHistory(studentId) {
                 </div>
             `).join('');
         } else {
-            list.innerHTML = '<div class="text-center text-muted">No library visits yet</div>';
+            list.innerHTML = '<div class="text-center text-muted p-3">No library visits yet</div>';
         }
     } else {
-        list.innerHTML = '<div class="text-center text-muted">No library visits yet</div>';
+        list.innerHTML = '<div class="text-center text-muted p-3">No library visits yet</div>';
     }
 }
 </script>

@@ -81,6 +81,19 @@
                             <span>Register</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('views.manage_books') }}" class="nav-link {% if request.endpoint == 'views.manage_books' %}active{% endif %}">
+                            <span class="nav-icon">📚</span>
+                            <span>Manage Books</span>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item" style="margin-top: auto;">
+                        <a href="{{ url_for('views.logout') }}" class="nav-link" style="color: var(--error);">
+                            <span class="nav-icon">🚪</span>
+                            <span>Logout</span>
+                        </a>
+                    </li>
                 </div>
             </ul>
             

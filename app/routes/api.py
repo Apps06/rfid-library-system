@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 from app import db
-from app.models import Student, AttendanceLog, Admin
+from app.models import Student, AttendanceLog, Admin, Book, BorrowRecord
 
 api_bp = Blueprint('api', __name__)
 
@@ -39,9 +39,15 @@ def scan_rfid():
         db.session.commit()
         is_new_registration = True
     
-    # Toggle entry/exit based on current state
-    if student.is_inside:
+    # Zone-specific toggling logic
+    latest_log = AttendanceLog.query.filter_by(
+        student_id=student.id, 
+        zone=zone
+    ).order_by(AttendanceLog.timestamp.desc()).first()
+
+    if latest_log and latest_log.action == 'ENTRY':
         action = 'EXIT'
+        # Update student global state if needed
         student.is_inside = False
     else:
         action = 'ENTRY'
@@ -352,3 +358,162 @@ def create_admin():
         'message': 'Admin created',
         'admin': admin.to_dict()
     }), 201
+
+
+# ============== LIBRARY BOOK ENDPOINTS ==============
+@api_bp.route('/books', methods=['GET'])
+def get_books():
+    """List all books with availability"""
+    search = request.args.get('search', '').strip()
+    query = Book.query
+    
+    if search:
+        query = query.filter(
+            (Book.title.ilike(f'%{search}%')) | 
+            (Book.author.ilike(f'%{search}%')) |
+            (Book.isbn.ilike(f'%{search}%'))
+        )
+        
+    books = query.all()
+    return jsonify({
+        'success': True,
+        'books': [b.to_dict() for b in books]
+    })
+
+@api_bp.route('/borrow', methods=['GET'])
+def get_student_borrows():
+    """Get active/overdue borrows for a student"""
+    student_id = request.args.get('student_id')
+    if not student_id:
+        return jsonify({'success': False, 'error': 'student_id required'}), 400
+        
+    borrows = BorrowRecord.query.filter_by(
+        student_id=student_id,
+        returned_at=None
+    ).all()
+    
+    return jsonify({
+        'success': True,
+        'borrows': [b.to_dict() for b in borrows]
+    })
+
+@api_bp.route('/borrow', methods=['POST'])
+def borrow_book():
+    """Borrow a book"""
+    try:
+        data = request.get_json()
+        print(f"📥 Borrow attempt: {data}")
+        
+        if not data or 'book_id' not in data or 'student_id' not in data:
+            return jsonify({'success': False, 'error': 'book_id and student_id required'}), 400
+            
+        book = Book.query.get(data['book_id'])
+        if not book:
+            return jsonify({'success': False, 'error': 'Book not found'}), 404
+            
+        if book.available_copies <= 0:
+            return jsonify({'success': False, 'error': 'No copies available'}), 400
+            
+        # Check if student already has this book borrowed
+        existing = BorrowRecord.query.filter_by(
+            student_id=data['student_id'],
+            book_id=data['book_id'],
+            returned_at=None
+        ).first()
+        
+        if existing:
+            return jsonify({'success': False, 'error': 'You already have this book borrowed'}), 400
+            
+        # Create borrow record
+        borrow = BorrowRecord(
+            book_id=book.id,
+            student_id=data['student_id']
+        )
+        
+        book.available_copies -= 1
+        db.session.add(borrow)
+        db.session.commit()
+        
+        print(f"✅ Borrow successful: {borrow.id}")
+        return jsonify({
+            'success': True,
+            'borrow': borrow.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Borrow error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@api_bp.route('/borrow/<int:id>/extend', methods=['PUT'])
+def extend_borrow(id):
+    """Extend borrow deadline (max 2 times, blocked for important)"""
+    borrow = BorrowRecord.query.get_or_404(id)
+    
+    if borrow.returned_at:
+        return jsonify({'success': False, 'error': 'Book already returned'}), 400
+        
+    if borrow.book.is_important:
+        return jsonify({'success': False, 'error': 'This book is marked as IMPORTANT and cannot be extended'}), 403
+        
+    if borrow.extensions_used >= 2:
+        return jsonify({'success': False, 'error': 'Maximum 2 extensions reached. Manual approval required.'}), 403
+        
+    # NEW RULE: Cannot extend again until the previous due date has passed
+    # If extended Once: Cannot extend again until "original" due date (current - 7 days) is passed
+    if borrow.extensions_used > 0:
+        previous_due_date = borrow.due_date - timedelta(days=7)
+        if datetime.utcnow() < previous_due_date:
+            return jsonify({
+                'success': False, 
+                'error': f'Cannot extend again yet. Please wait until {previous_due_date.strftime("%b %d")} (your previous due date) has passed.'
+            }), 403
+            
+    # Extend by 7 days and snap to end of day
+    new_due_date = borrow.due_date + timedelta(days=7)
+    borrow.due_date = new_due_date.replace(hour=23, minute=59, second=59, microsecond=0)
+    borrow.extensions_used += 1
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'borrow': borrow.to_dict(),
+        'message': f'Extended by 7 days. Extensions used: {borrow.extensions_used}/2'
+    })
+
+@api_bp.route('/borrow/<int:id>/return', methods=['PUT'])
+def return_book(id):
+    """Return a borrowed book"""
+    borrow = BorrowRecord.query.get_or_404(id)
+    
+    if borrow.returned_at:
+        return jsonify({'success': False, 'error': 'Book already returned'}), 400
+        
+    borrow.returned_at = datetime.utcnow()
+    borrow.status = 'RETURNED'
+    borrow.book.available_copies += 1
+    
+    # Calculate final fine
+    borrow.calculate_fine()
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'borrow': borrow.to_dict()
+    })
+
+@api_bp.route('/fines/<int:id>/pay', methods=['POST'])
+def pay_fine(id):
+    """Mark fine as paid"""
+    borrow = BorrowRecord.query.get_or_404(id)
+    
+    if borrow.fine_paid:
+        return jsonify({'success': False, 'error': 'Fine already paid'}), 400
+        
+    borrow.fine_paid = True
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Payment successful'
+    })
