@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome - Library Logger{% endblock %}
+{% block page_title %}Welcome{% endblock %}
+
+{% block content %}
+<div class="text-center" style="max-width: 600px; margin: 60px auto;">
+    
+    <!-- Scan Prompt Card -->
+    <div class="card" id="scan-card">
+        <div class="empty-state">
+            <div class="empty-state-icon" id="scan-icon" style="animation: pulse 2s infinite;">📡</div>
+            <h2 style="font-size: 28px; margin-bottom: 8px;">Scan Your RFID Card</h2>
+            <p class="text-muted">Hold your card near the reader to sign in</p>
+        </div>
+        
+        <div class="mt-3" style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md);">
+            <small class="text-muted">New card? It will be registered automatically.</small>
+        </div>
+    </div>
+
+    <!-- Loading State (hidden) -->
+    <div class="card" id="loading-card" style="display: none;">
+        <div class="empty-state">
+            <div class="empty-state-icon">⏳</div>
+            <h2>Processing...</h2>
+            <p class="text-muted">Please wait</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let lastProcessedTime = null;
+
+// Poll for RFID scans
+setInterval(async () => {
+    try {
+        const response = await API.get('/attendance?per_page=1');
+        if (response && response.success && response.logs.length > 0) {
+            const latest = response.logs[0];
+            const logTime = new Date(latest.timestamp).getTime();
+            const now = new Date().getTime();
+            
+            // If scan happened in last 5 seconds and is newer than our last check
+            if (now - logTime < 5000 && (!lastProcessedTime || logTime > lastProcessedTime)) {
+                lastProcessedTime = logTime;
+                
+                // Show loading
+                document.getElementById('scan-card').style.display = 'none';
+                document.getElementById('loading-card').style.display = 'block';
+                
+                // Check if student is new (auto-registered)
+                const isNew = latest.student_name && latest.student_name.startsWith('New Student');
+                
+                // Store student info in session
+                sessionStorage.setItem('currentStudent', JSON.stringify({
+                    id: latest.student_id,
+                    name: latest.student_name,
+                    roll_number: latest.roll_number,
+                    rfid_uid: latest.rfid_uid,
+                    logId: latest.id
+                }));
+                
+                if (isNew) {
+                    // New card - go to registration with UID pre-filled
+                    showToast('New Card Detected', 'Please complete registration', 'info');
+                    setTimeout(() => {
+                        window.location.href = '/register?uid=' + latest.rfid_uid;
+                    }, 1000);
+                } else {
+                    // Known card - go to zone selection
+                    showToast('Welcome back!', latest.student_name, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/zone-select';
+                    }, 1000);
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Polling error", e);
+    }
+}, 1000);
+</script>
+{% endblock %}

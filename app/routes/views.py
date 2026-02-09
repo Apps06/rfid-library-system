@@ -6,13 +6,33 @@ views_bp = Blueprint('views', __name__)
 
 @views_bp.route('/')
 def index():
-    """Redirect to dashboard"""
-    return redirect(url_for('views.dashboard'))
+    """Homepage with RFID scan prompt"""
+    return render_template('index.html')
 
 @views_bp.route('/dashboard')
 def dashboard():
-    """Main dashboard page"""
+    """Admin dashboard page"""
     return render_template('dashboard.html')
+
+@views_bp.route('/zone-select')
+def zone_select():
+    """Zone selection page after RFID scan"""
+    return render_template('zone_select.html')
+
+@views_bp.route('/library')
+def library():
+    """Library zone dashboard"""
+    return render_template('library.html')
+
+@views_bp.route('/labs')
+def labs():
+    """Labs zone dashboard"""
+    return render_template('labs.html')
+
+@views_bp.route('/classroom')
+def classroom():
+    """Classroom zone dashboard"""
+    return render_template('classroom.html')
 
 @views_bp.route('/students')
 def students():

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Labs - Library Logger{% endblock %}
+{% block page_title %}🔬 Labs{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto;">
+    
+    <!-- Student Quick Info -->
+    <div class="card mb-3" id="student-bar" style="display: none;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="font-size: 32px;">👤</div>
+                <div>
+                    <strong id="student-name">Student</strong>
+                    <span class="text-muted" id="student-roll"></span>
+                </div>
+            </div>
+            <div>
+                <span class="badge badge-info">🔬 In Lab</span>
+                <a href="/" class="btn btn-sm btn-secondary" style="margin-left: 12px;">Sign Out</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lab Features -->
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🧪 Equipment Borrowing</h2>
+            </div>
+            <div class="empty-state" style="padding: 32px;">
+                <div class="empty-state-icon">🔬</div>
+                <div class="empty-state-title">Coming Soon</div>
+                <p>Lab equipment and apparatus tracking will be available here.</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🕐 Your Lab History</h2>
+            </div>
+            <div class="activity-list" id="history-list">
+                <div class="text-center text-muted">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const studentData = sessionStorage.getItem('currentStudent');
+if (studentData) {
+    const student = JSON.parse(studentData);
+    document.getElementById('student-bar').style.display = 'block';
+    document.getElementById('student-name').textContent = student.name;
+    document.getElementById('student-roll').textContent = ' | ' + student.roll_number;
+    
+    loadHistory(student.id);
+}
+
+async function loadHistory(studentId) {
+    const response = await API.get(`/attendance?student_id=${studentId}&per_page=5`);
+    const list = document.getElementById('history-list');
+    
+    if (response && response.success && response.logs.length > 0) {
+        list.innerHTML = response.logs.filter(log => log.zone === 'Lab').slice(0, 5).map(log => `
+            <div class="activity-item">
+                <div class="activity-badge ${log.action.toLowerCase()}">
+                    ${log.action === 'ENTRY' ? '→' : '←'}
+                </div>
+                <div class="activity-info">
+                    <div class="activity-action ${log.action.toLowerCase()}">${log.action}</div>
+                </div>
+                <div class="activity-time">${formatTime(log.timestamp)}</div>
+            </div>
+        `).join('') || '<div class="text-center text-muted">No lab visits yet</div>';
+    } else {
+        list.innerHTML = '<div class="text-center text-muted">No lab visits yet</div>';
+    }
+}
+</script>
+{% endblock %}

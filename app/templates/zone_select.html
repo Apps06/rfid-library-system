@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Select Zone - Library Logger{% endblock %}
+{% block page_title %}Select Your Destination{% endblock %}
+
+{% block content %}
+<div class="text-center" style="max-width: 800px; margin: 40px auto;">
+    
+    <!-- Student Info -->
+    <div class="card mb-3" id="student-info" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="font-size: 48px;">👤</div>
+            <div style="text-align: left;">
+                <h2 id="student-name" style="margin-bottom: 4px;">Student Name</h2>
+                <div id="student-roll" class="text-muted">Roll Number</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zone Selection -->
+    <div class="card">
+        <h3 style="margin-bottom: 24px; color: var(--text-secondary);">Where are you going?</h3>
+        
+        <div class="grid-3" style="gap: 24px;">
+            <a href="/library" class="zone-btn" onclick="setZone('Library')">
+                <span class="zone-icon">📚</span>
+                <span class="zone-label">Library</span>
+                <small class="text-muted">Book borrowing & study</small>
+            </a>
+            <a href="/labs" class="zone-btn" onclick="setZone('Lab')">
+                <span class="zone-icon">🔬</span>
+                <span class="zone-label">Labs</span>
+                <small class="text-muted">Equipment & apparatus</small>
+            </a>
+            <a href="/classroom" class="zone-btn" onclick="setZone('Classroom')">
+                <span class="zone-icon">🏫</span>
+                <span class="zone-label">Classroom</span>
+                <small class="text-muted">Class attendance</small>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.zone-btn {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 30px 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.zone-btn:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent-primary);
+    background: var(--bg-hover);
+    box-shadow: var(--shadow-lg);
+}
+
+.zone-icon {
+    font-size: 56px;
+}
+
+.zone-label {
+    font-size: 20px;
+    font-weight: 700;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load student info from session
+const studentData = sessionStorage.getItem('currentStudent');
+if (studentData) {
+    const student = JSON.parse(studentData);
+    document.getElementById('student-info').style.display = 'block';
+    document.getElementById('student-name').textContent = student.name;
+    document.getElementById('student-roll').textContent = student.roll_number;
+}
+
+async function setZone(zone) {
+    const studentData = sessionStorage.getItem('currentStudent');
+    if (studentData) {
+        const student = JSON.parse(studentData);
+        // Update the attendance log with the selected zone
+        await API.put(`/attendance/${student.logId}/zone`, { zone: zone });
+        sessionStorage.setItem('currentZone', zone);
+    }
+}
+</script>
+{% endblock %}
