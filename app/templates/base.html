@@ -29,53 +29,59 @@
                     </a>
                 </li>
                 
-                <li style="padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Zones</li>
+                <!-- Zone Section (Hidden for students) -->
+                <div id="zones-section">
+                    <li style="padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Zones</li>
+                    
+                    <li class="nav-item">
+                        <a href="{{ url_for('views.library') }}" class="nav-link {% if request.endpoint == 'views.library' %}active{% endif %}">
+                            <span class="nav-icon">📚</span>
+                            <span>Library</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('views.labs') }}" class="nav-link {% if request.endpoint == 'views.labs' %}active{% endif %}">
+                            <span class="nav-icon">🔬</span>
+                            <span>Labs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('views.classroom') }}" class="nav-link {% if request.endpoint == 'views.classroom' %}active{% endif %}">
+                            <span class="nav-icon">🏫</span>
+                            <span>Classroom</span>
+                        </a>
+                    </li>
+                </div>
                 
-                <li class="nav-item">
-                    <a href="{{ url_for('views.library') }}" class="nav-link {% if request.endpoint == 'views.library' %}active{% endif %}">
-                        <span class="nav-icon">📚</span>
-                        <span>Library</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('views.labs') }}" class="nav-link {% if request.endpoint == 'views.labs' %}active{% endif %}">
-                        <span class="nav-icon">🔬</span>
-                        <span>Labs</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('views.classroom') }}" class="nav-link {% if request.endpoint == 'views.classroom' %}active{% endif %}">
-                        <span class="nav-icon">🏫</span>
-                        <span>Classroom</span>
-                    </a>
-                </li>
-                
-                <li style="padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 16px;">Admin</li>
-                
-                <li class="nav-item">
-                    <a href="{{ url_for('views.dashboard') }}" class="nav-link {% if request.endpoint == 'views.dashboard' %}active{% endif %}">
-                        <span class="nav-icon">📊</span>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('views.students') }}" class="nav-link {% if request.endpoint == 'views.students' %}active{% endif %}">
-                        <span class="nav-icon">👥</span>
-                        <span>Students</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('views.attendance') }}" class="nav-link {% if request.endpoint == 'views.attendance' %}active{% endif %}">
-                        <span class="nav-icon">📋</span>
-                        <span>Attendance</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('views.register') }}" class="nav-link {% if request.endpoint == 'views.register' %}active{% endif %}">
-                        <span class="nav-icon">➕</span>
-                        <span>Register</span>
-                    </a>
-                </li>
+                <!-- Admin Section -->
+                <div id="admin-section">
+                    <li style="padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 16px;">Admin</li>
+                    
+                    <li class="nav-item">
+                        <a href="{{ url_for('views.dashboard') }}" class="nav-link {% if request.endpoint == 'views.dashboard' %}active{% endif %}">
+                            <span class="nav-icon">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('views.students') }}" class="nav-link {% if request.endpoint == 'views.students' %}active{% endif %}">
+                            <span class="nav-icon">👥</span>
+                            <span>Students</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('views.attendance') }}" class="nav-link {% if request.endpoint == 'views.attendance' %}active{% endif %}">
+                            <span class="nav-icon">📋</span>
+                            <span>Attendance</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('views.register') }}" class="nav-link {% if request.endpoint == 'views.register' %}active{% endif %}">
+                            <span class="nav-icon">➕</span>
+                            <span>Register</span>
+                        </a>
+                    </li>
+                </div>
             </ul>
             
             <div class="sidebar-footer">
@@ -130,6 +136,18 @@
             
             if (isStudent || isAdmin) {
                 document.body.classList.remove('sidebar-hidden');
+                
+                // If student, hide the Zones and Admin sections (Students only need the dashboard content)
+                const zonesSection = document.getElementById('zones-section');
+                const adminSection = document.getElementById('admin-section');
+                
+                if (isStudent && !isAdmin) {
+                    if (zonesSection) zonesSection.style.display = 'none';
+                    if (adminSection) adminSection.style.display = 'none';
+                } else {
+                    if (zonesSection) zonesSection.style.display = 'block';
+                    if (adminSection) adminSection.style.display = 'block';
+                }
             } else {
                 document.body.classList.add('sidebar-hidden');
             }
