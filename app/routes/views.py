@@ -29,6 +29,11 @@ def register():
     """Register new student with RFID"""
     return render_template('register.html')
 
+@views_bp.route('/station')
+def station():
+    """Zone selection station page"""
+    return render_template('station.html')
+
 @views_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Admin login page"""

@@ -77,6 +77,13 @@ async function loadDashboardData() {
     
     activityList.innerHTML = data.recent_activity.map(log => {
         const isNew = log.student_name && log.student_name.startsWith('New Student');
+        const zoneIcons = {
+            'Library': '📚',
+            'Lab': '🔬',
+            'Classroom': '🏫'
+        };
+        const zoneIcon = zoneIcons[log.zone] || '📍';
+        
         return `
         <div class="activity-item">
             <div class="activity-badge ${log.action.toLowerCase()}">
@@ -88,6 +95,10 @@ async function loadDashboardData() {
                     ${isNew ? '<span class="badge badge-warning" style="font-size: 10px; margin-left: 5px;">New Card</span>' : ''}
                 </div>
                 <div class="activity-roll">${log.roll_number || log.rfid_uid}</div>
+            </div>
+            <div class="activity-zone" style="text-align: center; min-width: 80px;">
+                <div style="font-size: 20px;">${zoneIcon}</div>
+                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">${log.zone}</div>
             </div>
             <div class="activity-time">
                 <div class="activity-action ${log.action.toLowerCase()}">${log.action}</div>

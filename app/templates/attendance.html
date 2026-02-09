@@ -34,13 +34,14 @@
                     <th>Time</th>
                     <th>Student</th>
                     <th>Roll Number</th>
+                    <th>Zone</th>
                     <th>Action</th>
                     <th>RFID</th>
                 </tr>
             </thead>
             <tbody id="attendance-table">
                 <tr>
-                    <td colspan="5" class="text-center text-muted">Loading logs...</td>
+                    <td colspan="6" class="text-center text-muted">Loading logs...</td>
                 </tr>
             </tbody>
         </table>
@@ -81,7 +82,7 @@ async function loadAttendance(page = 1) {
     if (data.logs.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center text-muted">
+                <td colspan="6" class="text-center text-muted">
                     No attendance records found.
                 </td>
             </tr>
@@ -90,11 +91,22 @@ async function loadAttendance(page = 1) {
         return;
     }
     
+    const zoneIcons = {
+        'Library': '📚',
+        'Lab': '🔬',
+        'Classroom': '🏫'
+    };
+    
     tbody.innerHTML = data.logs.map(log => `
         <tr>
             <td>${formatDateTime(log.timestamp)}</td>
             <td><strong>${log.student_name || 'Unknown'}</strong></td>
             <td>${log.roll_number || '-'}</td>
+            <td>
+                <span class="zone-badge" title="${log.zone}">
+                    ${zoneIcons[log.zone] || '📍'} ${log.zone}
+                </span>
+            </td>
             <td>
                 <span class="badge ${log.action === 'ENTRY' ? 'badge-success' : 'badge-warning'}">
                     ${log.action}
@@ -161,11 +173,12 @@ function exportCSV() {
         .then(data => {
             if (!data.success) return;
             
-            const headers = ['Time', 'Student', 'Roll Number', 'Action', 'RFID'];
+            const headers = ['Time', 'Student', 'Roll Number', 'Zone', 'Action', 'RFID'];
             const rows = data.logs.map(log => [
                 log.timestamp,
                 log.student_name || 'Unknown',
                 log.roll_number || '',
+                log.zone,
                 log.action,
                 log.rfid_uid
             ]);

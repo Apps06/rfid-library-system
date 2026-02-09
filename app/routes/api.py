@@ -19,6 +19,7 @@ def scan_rfid():
     
     rfid_uid = data['rfid_uid'].upper().strip()
     device_id = data.get('device_id', 'GATE_01')
+    zone = data.get('zone', 'Library')
     
     # Find student by RFID
     student = Student.query.filter_by(rfid_uid=rfid_uid, is_active=True).first()
@@ -51,7 +52,8 @@ def scan_rfid():
         student_id=student.id,
         rfid_uid=rfid_uid,
         action=action,
-        device_id=device_id
+        device_id=device_id,
+        zone=zone
     )
     
     db.session.add(log)
@@ -66,6 +68,7 @@ def scan_rfid():
             'roll_number': student.roll_number,
             'department': student.department
         },
+        'zone': log.zone,
         'timestamp': log.timestamp.isoformat() + 'Z'
     })
 
@@ -228,6 +231,24 @@ def get_today_attendance():
         'success': True,
         'logs': [log.to_dict() for log in logs],
         'count': len(logs)
+    })
+
+
+@api_bp.route('/attendance/<int:id>/zone', methods=['PUT'])
+def update_attendance_zone(id):
+    """Update the zone for a specific attendance log"""
+    log = AttendanceLog.query.get_or_404(id)
+    data = request.get_json()
+    
+    if not data or 'zone' not in data:
+        return jsonify({'success': False, 'error': 'Zone required'}), 400
+    
+    log.zone = data['zone']
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'log': log.to_dict()
     })
 
 

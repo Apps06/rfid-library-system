@@ -46,6 +46,12 @@
                         <span>Register</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('views.station') }}" class="nav-link {% if request.endpoint == 'views.station' %}active{% endif %}">
+                        <span class="nav-icon">📍</span>
+                        <span>Station</span>
+                    </a>
+                </li>
             </ul>
             
             <div class="sidebar-footer">
