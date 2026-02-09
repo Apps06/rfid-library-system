@@ -247,7 +247,7 @@ def read_rfid():
     """Read RFID card and return UID as hex string"""
     if PI_MODE:
         reader = SimpleMFRC522()
-        id, _ = reader.read()
+        id = reader.read_id()
         # Convert to hex string (uppercase)
         return format(id, 'X')
     else:
