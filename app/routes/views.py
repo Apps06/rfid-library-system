@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import Admin
+from app import db
 
 views_bp = Blueprint('views', __name__)
 
@@ -70,6 +71,34 @@ def login():
             flash('Invalid username or password', 'error')
     
     return render_template('login.html')
+
+@views_bp.route('/admin/register', methods=['GET', 'POST'])
+def admin_register():
+    """Register a new admin account"""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if password != confirm_password:
+            flash('Passwords do not match', 'error')
+            return render_template('admin_register.html')
+            
+        existing_admin = Admin.query.filter_by(username=username).first()
+        if existing_admin:
+            flash('Username already exists', 'error')
+            return render_template('admin_register.html')
+            
+        new_admin = Admin(username=username)
+        new_admin.set_password(password)
+        
+        db.session.add(new_admin)
+        db.session.commit()
+        
+        flash('Admin account created successfully. Please login.', 'success')
+        return redirect(url_for('views.login'))
+        
+    return render_template('admin_register.html')
 
 @views_bp.route('/logout')
 @login_required

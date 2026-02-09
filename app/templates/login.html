@@ -1,49 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Library Logger</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="login-container">
-        <div class="login-box">
-            <div class="login-logo">📚</div>
-            <h1 class="login-title">Library Logger</h1>
-            <p class="login-subtitle">Admin Login</p>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div style="background: var(--danger-bg); color: var(--danger); padding: 12px; border-radius: var(--radius-md); margin-bottom: 20px;">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <form method="POST" action="{{ url_for('views.login') }}">
-                <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input type="text" name="username" class="form-input" required placeholder="Enter username">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" name="password" class="form-input" required placeholder="Enter password">
-                </div>
-                
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px;">
-                    Login
-                </button>
-            </form>
-            
-            <p style="margin-top: 24px; color: var(--text-muted); font-size: 13px;">
-                Default: admin / admin123
-            </p>
+{% extends 'base.html' %}
+
+{% block title %}Login - Library Logger{% endblock %}
+{% block page_title %}Admin Login{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-box card">
+        <div class="login-logo">📚</div>
+        <h2 class="login-title">Admin Login</h2>
+        <p class="login-subtitle">Access student and attendance management</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="toast {{ 'success' if category == 'success' else 'error' }}" style="position: static; min-width: 0; margin-bottom: 20px;">
+                        <span class="toast-content">{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="form-group text-left">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-input" placeholder="Enter username" required autofocus>
+            </div>
+            <div class="form-group text-left">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-input" placeholder="Enter password" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Login</button>
+        </form>
+
+        <div class="mt-3">
+            <a href="{{ url_for('views.admin_register') }}" class="text-muted" style="font-size: 14px; text-decoration: none;">
+                Don't have an account? Register
+            </a>
+            <br>
+            <a href="{{ url_for('views.index') }}" class="text-muted" style="font-size: 14px; text-decoration: none; display: inline-block; margin-top: 8px;">
+                ← Back to Scan
+            </a>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Just in case, ensure sidebar is hidden on login page
+    sessionStorage.clear();
+    updateSidebarVisibility();
+</script>
+{% endblock %}

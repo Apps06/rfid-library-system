@@ -17,6 +17,12 @@
         <div class="mt-3" style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md);">
             <small class="text-muted">New card? It will be registered automatically.</small>
         </div>
+
+        <div class="mt-3">
+            <a href="{{ url_for('views.login') }}" class="text-muted" style="font-size: 13px; text-decoration: none;">
+                🔑 Admin Access
+            </a>
+        </div>
     </div>
 
     <!-- Loading State (hidden) -->
@@ -32,6 +38,10 @@
 
 {% block scripts %}
 <script>
+// Clear session on homepage load
+sessionStorage.clear();
+updateSidebarVisibility();
+
 let lastProcessedTime = null;
 
 // Poll for RFID scans

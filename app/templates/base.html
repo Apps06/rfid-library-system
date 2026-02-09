@@ -10,10 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     {% block head %}{% endblock %}
 </head>
-<body>
+<body class="{% if not current_user.is_authenticated %}sidebar-hidden{% endif %}">
     <div class="app-container">
         <!-- Sidebar Navigation -->
-        <nav class="sidebar">
+        <nav class="sidebar" id="main-sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <span class="logo-icon">📚</span>
@@ -104,7 +104,40 @@
     <!-- Toast notification container -->
     <div id="toast-container"></div>
     
+    <style>
+        .sidebar-hidden .sidebar {
+            transform: translateX(-100%);
+            width: 0;
+            overflow: hidden;
+            border-right: none;
+        }
+        .sidebar-hidden .main-content {
+            margin-left: 0;
+        }
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+        .main-content {
+            transition: all 0.3s ease;
+        }
+    </style>
+
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        function updateSidebarVisibility() {
+            const isStudent = sessionStorage.getItem('currentStudent');
+            const isAdmin = {{ 'true' if current_user.is_authenticated else 'false' }};
+            
+            if (isStudent || isAdmin) {
+                document.body.classList.remove('sidebar-hidden');
+            } else {
+                document.body.classList.add('sidebar-hidden');
+            }
+        }
+        
+        // Run on load
+        document.addEventListener('DOMContentLoaded', updateSidebarVisibility);
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
