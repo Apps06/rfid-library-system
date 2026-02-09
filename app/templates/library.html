@@ -4,44 +4,54 @@
 {% block page_title %}📚 Library{% endblock %}
 
 {% block content %}
-<div style="max-width: 1000px; margin: 0 auto;">
+<div style="max-width: 800px; margin: 0 auto;">
     
-    <!-- Student Quick Info -->
-    <div class="card mb-3" id="student-bar" style="display: none;">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="font-size: 32px;">👤</div>
-                <div>
-                    <strong id="student-name">Student</strong>
-                    <span class="text-muted" id="student-roll"></span>
-                </div>
-            </div>
-            <div>
-                <span class="badge badge-success">📚 In Library</span>
-                <a href="/" class="btn btn-sm btn-secondary" style="margin-left: 12px;">Sign Out</a>
-            </div>
+    <!-- Scan Prompt -->
+    <div class="card text-center" id="scan-card">
+        <div class="empty-state">
+            <div class="empty-state-icon" style="animation: pulse 2s infinite;">📡</div>
+            <h2 style="font-size: 24px; margin-bottom: 8px;">Scan Your Card</h2>
+            <p class="text-muted">Hold your RFID card near the reader to check in to the <strong>Library</strong></p>
         </div>
     </div>
 
-    <!-- Library Features -->
-    <div class="grid-2">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">📖 Book Borrowing</h2>
-            </div>
-            <div class="empty-state" style="padding: 32px;">
-                <div class="empty-state-icon">📚</div>
-                <div class="empty-state-title">Coming Soon</div>
-                <p>Book borrowing and return tracking will be available here.</p>
+    <!-- Student Dashboard (Hidden until scan) -->
+    <div id="student-dashboard" style="display: none;">
+        <div class="card mb-3">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="font-size: 32px;">👤</div>
+                    <div>
+                        <strong id="student-name">Student</strong>
+                        <span class="text-muted" id="student-roll"></span>
+                    </div>
+                </div>
+                <div>
+                    <span class="badge badge-success">📚 In Library</span>
+                    <a href="/" class="btn btn-sm btn-secondary" style="margin-left: 12px;">Sign Out</a>
+                </div>
             </div>
         </div>
-        
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">🕐 Your History</h2>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📖 Book Borrowing</h2>
+                </div>
+                <div class="empty-state" style="padding: 32px;">
+                    <div class="empty-state-icon">📚</div>
+                    <div class="empty-state-title">Coming Soon</div>
+                    <p>Book borrowing and return tracking will be available here.</p>
+                </div>
             </div>
-            <div class="activity-list" id="history-list">
-                <div class="text-center text-muted">Loading...</div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🕐 Your History</h2>
+                </div>
+                <div class="activity-list" id="history-list">
+                    <div class="text-center text-muted">Loading...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -50,16 +60,55 @@
 
 {% block scripts %}
 <script>
-// Load student info
-const studentData = sessionStorage.getItem('currentStudent');
-if (studentData) {
-    const student = JSON.parse(studentData);
-    document.getElementById('student-bar').style.display = 'block';
-    document.getElementById('student-name').textContent = student.name;
-    document.getElementById('student-roll').textContent = ' | ' + student.roll_number;
+const ZONE = 'Library';
+let lastProcessedTime = null;
+
+// Poll for RFID scans
+setInterval(async () => {
+    try {
+        const response = await API.get('/attendance?per_page=1');
+        if (response && response.success && response.logs.length > 0) {
+            const latest = response.logs[0];
+            const logTime = new Date(latest.timestamp).getTime();
+            const now = new Date().getTime();
+            
+            // If scan happened in last 5 seconds and is newer than our last check
+            if (now - logTime < 5000 && (!lastProcessedTime || logTime > lastProcessedTime)) {
+                lastProcessedTime = logTime;
+                
+                // Update zone for this log
+                await API.put(`/attendance/${latest.id}/zone`, { zone: ZONE });
+                
+                // Store student info
+                sessionStorage.setItem('currentStudent', JSON.stringify({
+                    id: latest.student_id,
+                    name: latest.student_name,
+                    roll_number: latest.roll_number,
+                    rfid_uid: latest.rfid_uid,
+                    logId: latest.id
+                }));
+                sessionStorage.setItem('currentZone', ZONE);
+                
+                // Show sidebar and dashboard
+                updateSidebarVisibility();
+                showDashboard(latest);
+            }
+        }
+    } catch (e) {
+        console.error("Polling error", e);
+    }
+}, 1000);
+
+function showDashboard(log) {
+    document.getElementById('scan-card').style.display = 'none';
+    document.getElementById('student-dashboard').style.display = 'block';
     
-    // Load student's library history
-    loadHistory(student.id);
+    document.getElementById('student-name').textContent = log.student_name || 'New Student';
+    document.getElementById('student-roll').textContent = ' | ' + (log.roll_number || log.rfid_uid);
+    
+    showToast('Welcome!', `Checked in to ${ZONE}`, 'success');
+    
+    loadHistory(log.student_id);
 }
 
 async function loadHistory(studentId) {
@@ -67,17 +116,22 @@ async function loadHistory(studentId) {
     const list = document.getElementById('history-list');
     
     if (response && response.success && response.logs.length > 0) {
-        list.innerHTML = response.logs.filter(log => log.zone === 'Library').slice(0, 5).map(log => `
-            <div class="activity-item">
-                <div class="activity-badge ${log.action.toLowerCase()}">
-                    ${log.action === 'ENTRY' ? '→' : '←'}
+        const zoneLogs = response.logs.filter(log => log.zone === ZONE).slice(0, 5);
+        if (zoneLogs.length > 0) {
+            list.innerHTML = zoneLogs.map(log => `
+                <div class="activity-item">
+                    <div class="activity-badge ${log.action.toLowerCase()}">
+                        ${log.action === 'ENTRY' ? '→' : '←'}
+                    </div>
+                    <div class="activity-info">
+                        <div class="activity-action ${log.action.toLowerCase()}">${log.action}</div>
+                    </div>
+                    <div class="activity-time">${formatTime(log.timestamp)}</div>
                 </div>
-                <div class="activity-info">
-                    <div class="activity-action ${log.action.toLowerCase()}">${log.action}</div>
-                </div>
-                <div class="activity-time">${formatTime(log.timestamp)}</div>
-            </div>
-        `).join('') || '<div class="text-center text-muted">No library visits yet</div>';
+            `).join('');
+        } else {
+            list.innerHTML = '<div class="text-center text-muted">No library visits yet</div>';
+        }
     } else {
         list.innerHTML = '<div class="text-center text-muted">No library visits yet</div>';
     }
