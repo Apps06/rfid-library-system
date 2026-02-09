@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Students - Library Logger{% endblock %}
+{% block page_title %}Student Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">👥 All Students</h2>
+        <button class="btn btn-primary" onclick="openModal('add-student-modal')">
+            ➕ Add Student
+        </button>
+    </div>
+    
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Roll Number</th>
+                    <th>RFID UID</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="students-table">
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Loading students...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal-overlay" id="add-student-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Add New Student</h3>
+            <button class="modal-close" onclick="closeModal('add-student-modal')">&times;</button>
+        </div>
+        
+        <form id="add-student-form" onsubmit="addStudent(event)">
+            <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <input type="text" name="name" class="form-input" required placeholder="Enter student name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Roll Number *</label>
+                <input type="text" name="roll_number" class="form-input" required placeholder="e.g., 2024CS001">
+            </div>
+            <div class="form-group">
+                <label class="form-label">RFID UID *</label>
+                <input type="text" name="rfid_uid" class="form-input" required placeholder="Scan card or enter manually">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Department</label>
+                <input type="text" name="department" class="form-input" placeholder="e.g., Computer Science">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input" placeholder="student@example.com">
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('add-student-modal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="modal-overlay" id="edit-student-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Edit Student</h3>
+            <button class="modal-close" onclick="closeModal('edit-student-modal')">&times;</button>
+        </div>
+        
+        <form id="edit-student-form" onsubmit="updateStudent(event)">
+            <input type="hidden" name="id">
+            <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <input type="text" name="name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Roll Number *</label>
+                <input type="text" name="roll_number" class="form-input" required disabled>
+            </div>
+            <div class="form-group">
+                <label class="form-label">RFID UID *</label>
+                <input type="text" name="rfid_uid" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Department</label>
+                <input type="text" name="department" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input">
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('edit-student-modal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load all students
+async function loadStudents() {
+    const data = await API.get('/students');
+    if (!data || !data.success) return;
+    
+    const tbody = document.getElementById('students-table');
+    
+    if (data.students.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    No students registered. Click "Add Student" to get started.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = data.students.map(student => `
+        <tr>
+            <td><strong>${student.name}</strong></td>
+            <td>${student.roll_number}</td>
+            <td><code>${student.rfid_uid}</code></td>
+            <td>${student.department || '-'}</td>
+            <td>
+                <span class="badge ${student.is_inside ? 'badge-success' : 'badge-info'}">
+                    ${student.is_inside ? 'Inside' : 'Outside'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-secondary" onclick="editStudent(${student.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteStudent(${student.id}, '${student.name}')">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Add new student
+async function addStudent(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const data = {
+        name: form.name.value,
+        roll_number: form.roll_number.value,
+        rfid_uid: form.rfid_uid.value,
+        department: form.department.value,
+        email: form.email.value
+    };
+    
+    const result = await API.post('/students', data);
+    
+    if (result && result.success) {
+        showToast('Success', `Student "${data.name}" added successfully`, 'success');
+        closeModal('add-student-modal');
+        form.reset();
+        loadStudents();
+    } else {
+        showToast('Error', result?.error || 'Failed to add student', 'error');
+    }
+}
+
+// Open edit modal with student data
+async function editStudent(id) {
+    const data = await API.get(`/students/${id}`);
+    if (!data || !data.success) return;
+    
+    const student = data.student;
+    const form = document.getElementById('edit-student-form');
+    
+    form.id.value = student.id;
+    form.name.value = student.name;
+    form.roll_number.value = student.roll_number;
+    form.rfid_uid.value = student.rfid_uid;
+    form.department.value = student.department || '';
+    form.email.value = student.email || '';
+    
+    openModal('edit-student-modal');
+}
+
+// Update student
+async function updateStudent(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const id = form.id.value;
+    const data = {
+        name: form.name.value,
+        rfid_uid: form.rfid_uid.value,
+        department: form.department.value,
+        email: form.email.value
+    };
+    
+    const result = await API.put(`/students/${id}`, data);
+    
+    if (result && result.success) {
+        showToast('Success', 'Student updated successfully', 'success');
+        closeModal('edit-student-modal');
+        loadStudents();
+    } else {
+        showToast('Error', result?.error || 'Failed to update student', 'error');
+    }
+}
+
+// Delete student
+async function deleteStudent(id, name) {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    
+    const result = await API.delete(`/students/${id}`);
+    
+    if (result && result.success) {
+        showToast('Deleted', `Student "${name}" removed`, 'success');
+        loadStudents();
+    } else {
+        showToast('Error', 'Failed to delete student', 'error');
+    }
+}
+
+// Initial load
+loadStudents();
+</script>
+{% endblock %}

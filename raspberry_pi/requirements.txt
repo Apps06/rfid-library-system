@@ -1,0 +1,13 @@
+# Raspberry Pi RFID Scanner Dependencies
+
+# RFID Reader (RC522)
+mfrc522
+
+# GPIO for LED/Buzzer
+RPi.GPIO
+
+# HTTP Client for API calls
+requests
+
+# For offline queue
+# (SQLite is built into Python, no extra package needed)

@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Register Student - Library Logger{% endblock %}
+{% block page_title %}Register New Student{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+    <!-- Registration Form -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📝 Student Registration</h2>
+        </div>
+        
+        <form id="register-form" onsubmit="registerStudent(event)">
+            <div class="form-group">
+                <label class="form-label">RFID Card UID *</label>
+                <input type="text" name="rfid_uid" id="rfid-input" class="form-input" required 
+                       placeholder="Scan RFID card or enter manually"
+                       style="font-family: monospace; font-size: 18px; text-transform: uppercase;">
+                <small class="text-muted mt-1" style="display: block;">Scan the student's RFID card at the reader</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <input type="text" name="name" class="form-input" required placeholder="Enter student's full name">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Roll Number *</label>
+                <input type="text" name="roll_number" class="form-input" required placeholder="e.g., 2024CS001">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Department</label>
+                <select name="department" class="form-input">
+                    <option value="">Select Department</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Mechanical">Mechanical</option>
+                    <option value="Civil">Civil</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Email (Optional)</label>
+                <input type="email" name="email" class="form-input" placeholder="student@example.com">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px;">
+                ✅ Register Student
+            </button>
+        </form>
+    </div>
+    
+    <!-- Instructions -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📖 How to Register</h2>
+        </div>
+        
+        <div style="color: var(--text-secondary);">
+            <div style="display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start;">
+                <div style="background: var(--accent-gradient); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">1</div>
+                <div>
+                    <strong style="color: var(--text-primary);">Scan RFID Card</strong>
+                    <p style="margin-top: 4px;">Hold the student's ID card near the RFID reader. The UID will auto-populate.</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start;">
+                <div style="background: var(--accent-gradient); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">2</div>
+                <div>
+                    <strong style="color: var(--text-primary);">Enter Student Details</strong>
+                    <p style="margin-top: 4px;">Fill in the student's name, roll number, and department.</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start;">
+                <div style="background: var(--accent-gradient); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">3</div>
+                <div>
+                    <strong style="color: var(--text-primary);">Submit Registration</strong>
+                    <p style="margin-top: 4px;">Click "Register Student" to save. The card is now linked to the student.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: var(--info-bg); border: 1px solid var(--info); border-radius: var(--radius-md); padding: 16px; margin-top: 24px;">
+            <strong style="color: var(--info);">💡 Tip</strong>
+            <p style="color: var(--text-secondary); margin-top: 4px;">If you don't have the RFID reader connected, you can type the UID manually. The UID is usually printed on the back of the card.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Recently Registered -->
+<div class="card mt-3">
+    <div class="card-header">
+        <h2 class="card-title">🕐 Recently Registered</h2>
+    </div>
+    
+    <div id="recent-students">
+        <p class="text-muted">No recent registrations</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Focus on RFID input
+document.getElementById('rfid-input').focus();
+
+// Register student
+async function registerStudent(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const data = {
+        name: form.name.value.trim(),
+        roll_number: form.roll_number.value.trim(),
+        rfid_uid: form.rfid_uid.value.trim().toUpperCase(),
+        department: form.department.value,
+        email: form.email.value.trim()
+    };
+    
+    const result = await API.post('/students', data);
+    
+    if (result && result.success) {
+        showToast('Registered!', `${data.name} has been registered`, 'success');
+        form.reset();
+        document.getElementById('rfid-input').focus();
+        loadRecentStudents();
+    } else {
+        showToast('Error', result?.error || 'Failed to register student', 'error');
+    }
+}
+
+// Load recently registered students
+async function loadRecentStudents() {
+    const data = await API.get('/students');
+    if (!data || !data.success) return;
+    
+    const container = document.getElementById('recent-students');
+    
+    // Show last 5 registered
+    const recent = data.students.slice(-5).reverse();
+    
+    if (recent.length === 0) {
+        container.innerHTML = '<p class="text-muted">No students registered yet</p>';
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="activity-list">
+            ${recent.map(s => `
+                <div class="activity-item">
+                    <div class="activity-badge entry">👤</div>
+                    <div class="activity-info">
+                        <div class="activity-name">${s.name}</div>
+                        <div class="activity-roll">${s.roll_number} • ${s.department || 'No dept'}</div>
+                    </div>
+                    <div class="activity-time">
+                        <code>${s.rfid_uid}</code>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Initial load
+loadRecentStudents();
+</script>
+{% endblock %}

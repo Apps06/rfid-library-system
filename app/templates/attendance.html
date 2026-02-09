@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance - Library Logger{% endblock %}
+{% block page_title %}Attendance Logs{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="card mb-3">
+    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="margin-bottom: 4px;">Filter by Date</label>
+            <input type="date" id="filter-date" class="form-input" onchange="loadAttendance()">
+        </div>
+        <button class="btn btn-secondary" onclick="clearFilters()" style="margin-top: 20px;">
+            Clear Filters
+        </button>
+        <button class="btn btn-primary" onclick="exportCSV()" style="margin-top: 20px; margin-left: auto;">
+            📥 Export CSV
+        </button>
+    </div>
+</div>
+
+<!-- Attendance Table -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📋 Attendance Records</h2>
+        <span class="text-muted" id="record-count">Loading...</span>
+    </div>
+    
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Student</th>
+                    <th>Roll Number</th>
+                    <th>Action</th>
+                    <th>RFID</th>
+                </tr>
+            </thead>
+            <tbody id="attendance-table">
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Loading logs...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 20px;" id="pagination">
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+let totalPages = 1;
+
+// Load attendance logs
+async function loadAttendance(page = 1) {
+    currentPage = page;
+    
+    let endpoint = `/attendance?page=${page}&per_page=25`;
+    
+    const dateFilter = document.getElementById('filter-date').value;
+    if (dateFilter) {
+        endpoint += `&date=${dateFilter}`;
+    }
+    
+    const data = await API.get(endpoint);
+    if (!data || !data.success) return;
+    
+    totalPages = data.pages;
+    
+    // Update count
+    document.getElementById('record-count').textContent = `${data.total} records`;
+    
+    const tbody = document.getElementById('attendance-table');
+    
+    if (data.logs.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No attendance records found.
+                </td>
+            </tr>
+        `;
+        document.getElementById('pagination').innerHTML = '';
+        return;
+    }
+    
+    tbody.innerHTML = data.logs.map(log => `
+        <tr>
+            <td>${formatDateTime(log.timestamp)}</td>
+            <td><strong>${log.student_name || 'Unknown'}</strong></td>
+            <td>${log.roll_number || '-'}</td>
+            <td>
+                <span class="badge ${log.action === 'ENTRY' ? 'badge-success' : 'badge-warning'}">
+                    ${log.action}
+                </span>
+            </td>
+            <td><code>${log.rfid_uid}</code></td>
+        </tr>
+    `).join('');
+    
+    // Render pagination
+    renderPagination();
+}
+
+function renderPagination() {
+    const container = document.getElementById('pagination');
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Previous button
+    html += `<button class="btn btn-sm btn-secondary" 
+                     onclick="loadAttendance(${currentPage - 1})"
+                     ${currentPage === 1 ? 'disabled' : ''}>
+                ← Prev
+             </button>`;
+    
+    // Page numbers
+    for (let i = 1; i <= totalPages && i <= 5; i++) {
+        html += `<button class="btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-secondary'}"
+                         onclick="loadAttendance(${i})">
+                    ${i}
+                 </button>`;
+    }
+    
+    // Next button
+    html += `<button class="btn btn-sm btn-secondary"
+                     onclick="loadAttendance(${currentPage + 1})"
+                     ${currentPage === totalPages ? 'disabled' : ''}>
+                Next →
+             </button>`;
+    
+    container.innerHTML = html;
+}
+
+function clearFilters() {
+    document.getElementById('filter-date').value = '';
+    loadAttendance(1);
+}
+
+function exportCSV() {
+    const dateFilter = document.getElementById('filter-date').value;
+    let url = '/api/attendance?per_page=1000';
+    if (dateFilter) {
+        url += `&date=${dateFilter}`;
+    }
+    
+    // Fetch and convert to CSV
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) return;
+            
+            const headers = ['Time', 'Student', 'Roll Number', 'Action', 'RFID'];
+            const rows = data.logs.map(log => [
+                log.timestamp,
+                log.student_name || 'Unknown',
+                log.roll_number || '',
+                log.action,
+                log.rfid_uid
+            ]);
+            
+            const csvContent = [headers, ...rows]
+                .map(row => row.join(','))
+                .join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            
+            showToast('Exported', 'CSV file downloaded', 'success');
+        });
+}
+
+// Initial load
+loadAttendance();
+</script>
+{% endblock %}
