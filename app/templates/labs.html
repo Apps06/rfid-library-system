@@ -75,6 +75,22 @@ setInterval(async () => {
                 lastProcessedTime = logTime;
                 
                 if (latest.action === 'ENTRY') {
+                    // Check if student is new
+                    const isNew = latest.student_name && latest.student_name.startsWith('New Student');
+                    
+                    if (isNew) {
+                        sessionStorage.setItem('currentStudent', JSON.stringify({
+                            id: latest.student_id,
+                            name: latest.student_name,
+                            roll_number: latest.roll_number,
+                            rfid_uid: latest.rfid_uid,
+                            logId: latest.id
+                        }));
+                        showToast('New Card Detected', 'Please register your details', 'info');
+                        setTimeout(() => window.location.href = '/register', 1000);
+                        return;
+                    }
+
                     await API.put(`/attendance/${latest.id}/zone`, { zone: ZONE });
                     
                     sessionStorage.setItem('currentStudent', JSON.stringify({
