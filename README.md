@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Student Library Logger - RFID + Raspberry Pi
 
 An automated student library attendance tracking system using RFID technology and Raspberry Pi.
