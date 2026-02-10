@@ -46,6 +46,16 @@ from config import (
 
 import os
 
+# SimpleMFRC522 sets GPIO.BOARD mode internally, so we must convert
+# our BCM pin numbers to BOARD numbering to avoid a mode conflict.
+if PI_MODE:
+    _BCM_TO_BOARD = {17: 11, 27: 13, 22: 15, 18: 12}
+    LED_GREEN = _BCM_TO_BOARD.get(LED_GREEN, LED_GREEN)
+    LED_YELLOW = _BCM_TO_BOARD.get(LED_YELLOW, LED_YELLOW)
+    LED_RED = _BCM_TO_BOARD.get(LED_RED, LED_RED)
+    BUZZER_PIN = _BCM_TO_BOARD.get(BUZZER_PIN, BUZZER_PIN)
+    print(f"   📌 Pins converted to BOARD mode: G={LED_GREEN}, Y={LED_YELLOW}, R={LED_RED}, B={BUZZER_PIN}")
+
 # Global reader instance
 reader = None
 
@@ -115,7 +125,8 @@ def setup_gpio():
     if not PI_MODE:
         return
     
-    GPIO.setmode(GPIO.BCM)
+    # Note: SimpleMFRC522 already set GPIO.BOARD mode,
+    # so we do NOT call GPIO.setmode() again here.
     GPIO.setwarnings(False)
     
     # Setup LED pins as outputs
