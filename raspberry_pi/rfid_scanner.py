@@ -28,10 +28,14 @@ try:
     import RPi.GPIO as GPIO
     from mfrc522 import SimpleMFRC522
     PI_MODE = True
-except ImportError:
+except ImportError as e:
     PI_MODE = False
-    print("📟  Running in USB/Manual RFID mode (RPi.GPIO not available)")
+    print(f"📟  Running in USB/Manual RFID mode (Pi hardware not detected or library missing: {e})")
     print("    → Connect a USB RFID reader or type UIDs manually")
+except Exception as e:
+    PI_MODE = False
+    print(f"⚠️  Hardware initialization failed: {e}")
+    print("    → Falling back to USB/Manual mode")
 
 # Local config
 from config import (
@@ -39,6 +43,16 @@ from config import (
     LED_GREEN, LED_RED, LED_YELLOW, BUZZER_PIN,
     SCAN_DELAY, LED_DURATION, BEEP_DURATION, RETRY_INTERVAL
 )
+
+import os
+
+def check_spi():
+    """Check if SPI is enabled on the system"""
+    if not os.path.exists('/dev/spidev0.0'):
+        print("⚠️  Warning: SPI interface not detected (/dev/spidev0.0)")
+        print("    → Run 'sudo raspi-config' and enable SPI under Interface Options")
+        return False
+    return True
 
 # ========================================
 # Offline Queue (SQLite)
@@ -281,6 +295,8 @@ def main():
     
     # Initialize
     init_queue_db()
+    if PI_MODE:
+        check_spi()
     setup_gpio()
     
     # Start offline queue processor in background
