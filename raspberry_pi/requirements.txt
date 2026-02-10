@@ -9,5 +9,8 @@ RPi.GPIO
 # HTTP Client for API calls
 requests
 
+# SPI interface for RC522
+spidev
+
 # For offline queue
 # (SQLite is built into Python, no extra package needed)
