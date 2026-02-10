@@ -379,6 +379,9 @@ def main():
             # Process the scan
             process_scan(uid)
             
+            # Small pause to allow user to move card away
+            time.sleep(0.5)
+            
             print("\n📡 Waiting for next card...")
     
     except Exception as e:

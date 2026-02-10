@@ -194,15 +194,17 @@ def update_student(id):
 
 @api_bp.route('/students/<int:id>', methods=['DELETE'])
 def delete_student(id):
-    """Delete a student"""
+    """Delete a student and all related records"""
     student = Student.query.get_or_404(id)
     
-    # Delete related attendance logs first
+    # Delete related records to handle foreign key constraints
     AttendanceLog.query.filter_by(student_id=id).delete()
+    BookBorrow.query.filter_by(student_id=id).delete()
+    ApparatusBorrow.query.filter_by(student_id=id).delete()
     
     db.session.delete(student)
     db.session.commit()
-    return jsonify({'success': True, 'message': 'Student deleted'})
+    return jsonify({'success': True, 'message': 'Student and related records deleted'})
 
 
 # ============== ATTENDANCE ENDPOINTS ==============

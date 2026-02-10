@@ -31,7 +31,7 @@ BUZZER_PIN = 18
 # ========================================
 
 # Delay between scans (seconds) - prevents duplicate reads
-SCAN_DELAY = 2.0
+SCAN_DELAY = 3.0
 
 # LED on duration (seconds)
 LED_DURATION = 1.0
