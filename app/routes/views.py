@@ -43,6 +43,11 @@ def library_attendance():
     """Library attendance page with RFID scanning"""
     return render_template('library/attendance.html')
 
+@views_bp.route('/library/students')
+def library_students():
+    """Library - student management page"""
+    return render_template('library/students.html')
+
 @views_bp.route('/library/borrow')
 def library_borrow():
     """Library book borrowing page"""
@@ -74,6 +79,11 @@ def labs_dashboard():
 def labs_attendance():
     """Labs attendance page"""
     return render_template('labs/attendance.html')
+
+@views_bp.route('/labs/students')
+def labs_students():
+    """Labs - student management page"""
+    return render_template('labs/students.html')
 
 @views_bp.route('/labs/borrow')
 def labs_borrow():

@@ -137,6 +137,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ url_for('views.library_students') }}"
+                        class="nav-link {% if request.endpoint == 'views.library_students' %}active{% endif %}">
+                        <span class="nav-icon">👥</span>
+                        <span>Students</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ url_for('views.library_borrow') }}"
                         class="nav-link {% if request.endpoint == 'views.library_borrow' %}active{% endif %}">
                         <span class="nav-icon">📖</span>

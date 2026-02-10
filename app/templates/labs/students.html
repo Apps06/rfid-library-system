@@ -1,0 +1,170 @@
+{% extends 'labs/base.html' %}
+
+{% block title %}Students - Labs{% endblock %}
+{% block page_title %}Students{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">👥 Registered Students</h2>
+        <div class="header-actions-inline">
+            <input type="text" id="search-input" class="form-input" placeholder="Search by name or roll number..."
+                style="width: 300px;">
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="students-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Roll Number</th>
+                    <th>Department</th>
+                    <th>RFID UID</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="students-tbody">
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Edit Student</h3>
+            <button class="modal-close" onclick="closeModal('edit-modal')">&times;</button>
+        </div>
+        <form id="edit-form">
+            <input type="hidden" id="edit-id">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" id="edit-name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Roll Number</label>
+                <input type="text" id="edit-roll" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Department</label>
+                <input type="text" id="edit-dept" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">RFID UID</label>
+                <input type="text" id="edit-rfid" class="form-input" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('edit-modal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allStudents = [];
+
+    async function loadStudents() {
+        const data = await API.get('/students');
+        if (!data || !data.success) return;
+
+        allStudents = data.students;
+        renderStudents(allStudents);
+    }
+
+    function renderStudents(students) {
+        const tbody = document.getElementById('students-tbody');
+
+        if (students.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No students found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = students.map(s => `
+        <tr>
+            <td><strong>${s.name}</strong></td>
+            <td>${s.roll_number}</td>
+            <td>${s.department || '-'}</td>
+            <td><code>${s.rfid_uid}</code></td>
+            <td>
+                ${s.is_inside
+                ? '<span class="badge badge-success">Inside</span>'
+                : '<span class="badge badge-info">Outside</span>'}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-secondary" onclick="editStudent(${s.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteStudent(${s.id})">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+    }
+
+    // Search functionality
+    document.getElementById('search-input').addEventListener('input', debounce(function (e) {
+        const query = e.target.value.toLowerCase();
+        const filtered = allStudents.filter(s =>
+            s.name.toLowerCase().includes(query) ||
+            s.roll_number.toLowerCase().includes(query)
+        );
+        renderStudents(filtered);
+    }, 300));
+
+    function editStudent(id) {
+        const student = allStudents.find(s => s.id === id);
+        if (!student) return;
+
+        document.getElementById('edit-id').value = student.id;
+        document.getElementById('edit-name').value = student.name;
+        document.getElementById('edit-roll').value = student.roll_number;
+        document.getElementById('edit-dept').value = student.department || '';
+        document.getElementById('edit-rfid').value = student.rfid_uid;
+
+        openModal('edit-modal');
+    }
+
+    document.getElementById('edit-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const id = document.getElementById('edit-id').value;
+        const data = {
+            name: document.getElementById('edit-name').value,
+            roll_number: document.getElementById('edit-roll').value,
+            department: document.getElementById('edit-dept').value,
+            rfid_uid: document.getElementById('edit-rfid').value
+        };
+
+        const result = await API.put(`/students/${id}`, data);
+
+        if (result && result.success) {
+            showToast('Success', 'Student updated successfully', 'success');
+            closeModal('edit-modal');
+            loadStudents();
+        } else {
+            showToast('Error', result?.error || 'Failed to update student', 'error');
+        }
+    });
+
+    async function deleteStudent(id) {
+        if (!confirm('Are you sure you want to remove this student? This will also delete their attendance logs.')) return;
+
+        const result = await API.delete(`/students/${id}`);
+
+        if (result && result.success) {
+            showToast('Success', 'Student removed', 'success');
+            loadStudents();
+        } else {
+            showToast('Error', result?.error || 'Failed to remove student', 'error');
+        }
+    }
+
+    loadStudents();
+</script>
+{% endblock %}
