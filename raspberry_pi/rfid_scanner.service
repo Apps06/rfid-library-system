@@ -3,10 +3,8 @@ Description=RFID Library Scanner Service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/rfid-library-system/raspberry_pi/rfid_scanner.py
+ExecStart=/home/pi/rfid-library-system/venv/bin/python3 /home/pi/rfid-library-system/raspberry_pi/rfid_scanner.py
 WorkingDirectory=/home/pi/rfid-library-system/raspberry_pi
-StandardOutput=inherit
-StandardError=inherit
 Restart=always
 User=pi
 
