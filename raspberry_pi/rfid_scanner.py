@@ -30,7 +30,8 @@ try:
     PI_MODE = True
 except ImportError:
     PI_MODE = False
-    print("⚠️  Running in SIMULATION mode (RPi.GPIO not available)")
+    print("📟  Running in USB/Manual RFID mode (RPi.GPIO not available)")
+    print("    → Connect a USB RFID reader or type UIDs manually")
 
 # Local config
 from config import (
@@ -251,10 +252,13 @@ def read_rfid():
         # Convert to hex string (uppercase)
         return format(id, 'X')
     else:
-        # Simulation mode - generate random UID or use test values
-        import random
-        test_uids = ['ABC123', 'DEF456', 'UNKNOWN']  # Add your test UIDs
-        return random.choice(test_uids)
+        # USB RFID reader mode - reads from stdin
+        # USB RFID readers act as keyboard input: they type the UID and press Enter
+        # You can also type a UID manually for testing
+        uid = input("\n🔍 Scan RFID card (or type UID): ").strip().upper()
+        if not uid:
+            return None
+        return uid
 
 # ========================================
 # Main Loop
@@ -272,7 +276,7 @@ def main():
     print(f"🔧 Configuration:")
     print(f"   API URL: {API_URL}")
     print(f"   Device ID: {DEVICE_ID}")
-    print(f"   Pi Mode: {'HARDWARE' if PI_MODE else 'SIMULATION'}")
+    print(f"   Mode: {'HARDWARE (RC522)' if PI_MODE else 'USB/MANUAL INPUT'}")
     print()
     
     # Initialize
@@ -300,18 +304,20 @@ def main():
     
     try:
         while True:
-            if PI_MODE:
-                # Real hardware mode
-                try:
-                    uid = read_rfid()
-                except Exception as e:
-                    print(f"Reader error: {e}")
-                    time.sleep(1)
-                    continue
-            else:
-                # Simulation mode - wait for Enter key
-                input("\n[Press Enter to simulate card scan] ")
+            try:
                 uid = read_rfid()
+            except EOFError:
+                print("\n\n👋 Input stream closed. Shutting down...")
+                cleanup_gpio()
+                sys.exit(0)
+            except Exception as e:
+                print(f"Reader error: {e}")
+                time.sleep(1)
+                continue
+            
+            # Skip empty input
+            if not uid:
+                continue
             
             current_time = time.time()
             
