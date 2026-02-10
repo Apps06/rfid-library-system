@@ -138,6 +138,23 @@
     `).join('');
     }
 
+    // Polling for latest scans from the physical RC522 reader
+    function startPolling() {
+        setInterval(async () => {
+            const data = await API.get(`/scan/latest/${ZONE}`);
+            if (data && data.success && data.rfid_uid) {
+                const input = document.getElementById('rfid-input');
+                input.value = data.rfid_uid;
+                input.classList.add('flash-success');
+                setTimeout(() => input.classList.remove('flash-success'), 1000);
+                
+                // Show notification
+                showToast('RFID Scanned', `Card ${data.rfid_uid} detected`, 'info');
+            }
+        }, 2000);
+    }
+
     loadTodayAttendance();
+    startPolling();
 </script>
 {% endblock %}

@@ -7,6 +7,20 @@ from app.models import Student, AttendanceLog, Admin, Book, BookBorrow, Apparatu
 
 api_bp = Blueprint('api', __name__)
 
+# Buffer to store the latest scan for each zone
+# Format: { 'Library': 'UID123', 'Lab': 'UID456' }
+scan_buffer = {}
+
+@api_bp.route('/scan/latest/<zone>', methods=['GET'])
+def get_latest_scan(zone):
+    """Retrieve and clear the latest scan for a specific zone"""
+    uid = scan_buffer.get(zone)
+    if uid:
+        # Clear buffer after retrieval to avoid repeated fills
+        scan_buffer[zone] = None
+        return jsonify({'success': True, 'rfid_uid': uid})
+    return jsonify({'success': True, 'rfid_uid': None})
+
 # ============== RFID SCAN ENDPOINT ==============
 @api_bp.route('/scan', methods=['POST'])
 def scan_rfid():
@@ -22,6 +36,9 @@ def scan_rfid():
     rfid_uid = data['rfid_uid'].upper().strip()
     device_id = data.get('device_id', 'GATE_01')
     zone = data.get('zone', 'Library')  # Library, Lab, or Classroom
+
+    # Store in buffer for the web UI
+    scan_buffer[zone] = rfid_uid
     
     # Find student by RFID
     student = Student.query.filter_by(rfid_uid=rfid_uid, is_active=True).first()
