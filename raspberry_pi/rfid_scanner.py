@@ -261,10 +261,18 @@ def process_offline_queue():
 def read_rfid():
     """Read RFID card and return UID as hex string"""
     if PI_MODE:
-        reader = SimpleMFRC522()
-        id = reader.read_id()
-        # Convert to hex string (uppercase)
-        return format(id, 'X')
+        try:
+            reader = SimpleMFRC522()
+            print("   🔍 Place card near reader...")
+            id = reader.read_id()
+            if id:
+                print(f"   ✨ Card detected! (Raw ID: {id})")
+                # Convert to hex string (uppercase)
+                return format(id, 'X')
+            return None
+        except Exception as e:
+            print(f"   ⚠️  Hardware read error: {e}")
+            return None
     else:
         # USB RFID reader mode - reads from stdin
         # USB RFID readers act as keyboard input: they type the UID and press Enter
