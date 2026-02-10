@@ -46,6 +46,9 @@ from config import (
 
 import os
 
+# Global reader instance
+reader = None
+
 def check_spi():
     """Check if SPI is enabled on the system"""
     if not os.path.exists('/dev/spidev0.0'):
@@ -260,9 +263,12 @@ def process_offline_queue():
 # ========================================
 def read_rfid():
     """Read RFID card and return UID as hex string"""
+    global reader
     if PI_MODE:
         try:
-            reader = SimpleMFRC522()
+            if reader is None:
+                reader = SimpleMFRC522()
+            
             print("   🔍 Place card near reader...")
             id = reader.read_id()
             if id:
@@ -272,6 +278,8 @@ def read_rfid():
             return None
         except Exception as e:
             print(f"   ⚠️  Hardware read error: {e}")
+            # Try to reset reader on error
+            reader = None
             return None
     else:
         # USB RFID reader mode - reads from stdin
@@ -301,10 +309,15 @@ def main():
     print(f"   Mode: {'HARDWARE (RC522)' if PI_MODE else 'USB/MANUAL INPUT'}")
     print()
     
-    # Initialize
     init_queue_db()
     if PI_MODE:
-        check_spi()
+        global reader
+        if check_spi():
+            try:
+                reader = SimpleMFRC522()
+                print("   ✅ RFID Reader initialized successfully")
+            except Exception as e:
+                print(f"   ❌ Failed to initialize RFID Reader: {e}")
     setup_gpio()
     
     # Start offline queue processor in background
